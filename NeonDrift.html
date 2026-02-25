@@ -16,6 +16,7 @@
             --panel: rgba(12, 16, 40, .72);
             --border: rgba(86, 242, 255, .20);
             --shadow: rgba(0, 0, 0, .55);
+            --danger: rgba(255, 60, 90, .22);
         }
 
         html,
@@ -50,10 +51,10 @@
             justify-content: space-between;
             align-items: flex-start;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .pill {
-            pointer-events: none;
             background: var(--panel);
             border: 1px solid var(--border);
             box-shadow: 0 10px 30px var(--shadow);
@@ -73,8 +74,67 @@
 
         .pill .value {
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 800;
             margin-top: 2px
+        }
+
+        .pill.small {
+            min-width: 190px
+        }
+
+        .rowInline {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .barWrap {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .bar {
+            width: 160px;
+            height: 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .14);
+            background: rgba(255, 255, 255, .06);
+            overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+        }
+
+        .bar>div {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(86, 242, 255, .85), rgba(255, 79, 216, .75));
+        }
+
+        .badgePill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--neon));
+            box-shadow: 0 0 18px rgba(86, 242, 255, .55);
+        }
+
+        .dangerDot {
+            background: radial-gradient(circle at 30% 30%, #fff, #ff3c5a);
+            box-shadow: 0 0 18px rgba(255, 60, 90, .55);
         }
 
         .center {
@@ -82,7 +142,7 @@
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
-            width: min(520px, calc(100vw - 32px));
+            width: min(620px, calc(100vw - 32px));
             pointer-events: auto;
         }
 
@@ -143,7 +203,7 @@
             color: var(--text);
             padding: 10px 12px;
             border-radius: 12px;
-            font-weight: 650;
+            font-weight: 700;
             letter-spacing: .01em;
             cursor: pointer;
             box-shadow: 0 10px 24px rgba(0, 0, 0, .35);
@@ -174,7 +234,7 @@
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, .14);
             background: rgba(255, 255, 255, .06);
-            font-weight: 700;
+            font-weight: 800;
             font-size: 12px;
             color: var(--text);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
@@ -190,13 +250,142 @@
             flex-wrap: wrap;
         }
 
-        .hide {
-            display: none
+        .gridStats {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
-        a {
-            color: var(--neon);
-            text-decoration: none
+        .stat {
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(255, 255, 255, .05);
+            border-radius: 14px;
+            padding: 10px 12px;
+        }
+
+        .stat .k {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+
+        .stat .v {
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 2px
+        }
+
+        .cosmeticsWrap {
+            margin-top: 14px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(255, 255, 255, .04);
+            border-radius: 16px;
+            padding: 12px;
+        }
+
+        .cosmeticsTitle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .cosmeticsTitle .t {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .cosmeticsGrid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        @media (min-width: 520px) {
+            .cosmeticsGrid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .cosmeticItem {
+            position: relative;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .16);
+            padding: 10px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform .06s ease, filter .12s ease, border-color .12s ease;
+            user-select: none;
+        }
+
+        .cosmeticItem:hover {
+            filter: brightness(1.05)
+        }
+
+        .cosmeticItem:active {
+            transform: translateY(1px) scale(.99)
+        }
+
+        .cosmeticItem.selected {
+            border-color: rgba(86, 242, 255, .45);
+            box-shadow: 0 0 0 2px rgba(86, 242, 255, .10) inset;
+        }
+
+        .cosmeticSwatch {
+            height: 26px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: linear-gradient(90deg, rgba(86, 242, 255, .35), rgba(255, 79, 216, .28));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+        }
+
+        .cosmeticName {
+            margin-top: 8px;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .cosmeticReq {
+            margin-top: 3px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .lockedOverlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: rgba(219, 232, 255, .92);
+            font-size: 12px;
+            gap: 8px;
+        }
+
+        .lockIcon {
+            width: 18px;
+            height: 18px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, .18);
+            background: rgba(255, 255, 255, .06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hide {
+            display: none
         }
     </style>
 </head>
@@ -209,10 +398,33 @@
             <div class="pill">
                 <div class="label">Score</div>
                 <div class="value" id="score">0</div>
+                <div class="rowInline" style="margin-top:8px">
+                    <span class="badgePill" id="skinPill"><span class="dot" id="skinDot"></span><span
+                            id="skinName">Starter</span></span>
+                </div>
             </div>
+
             <div class="pill">
                 <div class="label">Best</div>
                 <div class="value" id="best">0</div>
+                <div class="rowInline" style="margin-top:8px">
+                    <span class="badgePill" id="stormPill"><span class="dot" id="stormDot"></span><span
+                            id="stormText">Calm</span></span>
+                </div>
+            </div>
+
+            <div class="pill small">
+                <div class="label">Combo</div>
+                <div class="value" id="combo">x1</div>
+                <div class="barWrap" style="margin-top:8px">
+                    <span class="badgePill"><span class="dot"></span><span>Dash</span></span>
+                    <div class="bar">
+                        <div id="dashBar"></div>
+                    </div>
+                </div>
+                <div style="margin-top:8px;color:var(--muted);font-size:12px">
+                    Press <span class="kbd">Space</span> to dash
+                </div>
             </div>
         </div>
     </div>
@@ -223,24 +435,43 @@
                 <div class="badge"></div>
                 <h1 id="ovTitle">Neon Drift</h1>
             </div>
-            <div class="desc" id="ovDesc">
-                Dodge the incoming asteroids. Survive as long as you can.
-                <br><br>
-                Desktop controls: <span class="kbd">W</span><span style="display:inline-block;width:6px"></span><span
-                    class="kbd">A</span><span style="display:inline-block;width:6px"></span><span
-                    class="kbd">S</span><span style="display:inline-block;width:6px"></span><span class="kbd">D</span>
-                or arrow keys.
-                <br>
-                Mobile controls: drag anywhere to steer.
+            <div class="desc" id="ovDesc"></div>
+
+            <div class="gridStats hide" id="ovStats">
+                <div class="stat">
+                    <div class="k">Survival</div>
+                    <div class="v" id="stSurvive">0s</div>
+                </div>
+                <div class="stat">
+                    <div class="k">Near Misses</div>
+                    <div class="v" id="stNear">0</div>
+                </div>
+                <div class="stat">
+                    <div class="k">Top Combo</div>
+                    <div class="v" id="stCombo">x1</div>
+                </div>
+                <div class="stat">
+                    <div class="k">Next Unlock</div>
+                    <div class="v" id="stNext">None</div>
+                </div>
             </div>
-            <div class="row">
+
+            <div class="cosmeticsWrap hide" id="cosmeticsWrap">
+                <div class="cosmeticsTitle">
+                    <div class="t">Cosmetics</div>
+                    <div style="font-size:12px;color:var(--muted)">Click a skin to select</div>
+                </div>
+                <div class="cosmeticsGrid" id="cosmeticsGrid"></div>
+            </div>
+
+            <div class="row" style="margin-top:14px">
                 <div class="btns">
                     <button id="playBtn">Play</button>
                     <button class="secondary" id="shareBtn">Copy Share Text</button>
                 </div>
                 <div class="footerTip">
                     <span id="smallTip">Press <span class="kbd">Space</span> to restart after game over.</span>
-                    <span>Made in one file</span>
+                    <span>One file game</span>
                 </div>
             </div>
         </div>
@@ -253,11 +484,31 @@
 
             const scoreEl = document.getElementById('score');
             const bestEl = document.getElementById('best');
+            const comboEl = document.getElementById('combo');
+            const dashBarEl = document.getElementById('dashBar');
+
+            const skinNameEl = document.getElementById('skinName');
+            const skinPillEl = document.getElementById('skinPill');
+            const skinDotEl = document.getElementById('skinDot');
+
+            const stormPillEl = document.getElementById('stormPill');
+            const stormDotEl = document.getElementById('stormDot');
+            const stormTextEl = document.getElementById('stormText');
+
             const overlay = document.getElementById('overlay');
             const ovTitle = document.getElementById('ovTitle');
             const ovDesc = document.getElementById('ovDesc');
             const playBtn = document.getElementById('playBtn');
             const shareBtn = document.getElementById('shareBtn');
+
+            const ovStats = document.getElementById('ovStats');
+            const stSurvive = document.getElementById('stSurvive');
+            const stNear = document.getElementById('stNear');
+            const stCombo = document.getElementById('stCombo');
+            const stNext = document.getElementById('stNext');
+
+            const cosmeticsWrap = document.getElementById('cosmeticsWrap');
+            const cosmeticsGrid = document.getElementById('cosmeticsGrid');
 
             const DPR = () => Math.min(2, window.devicePixelRatio || 1);
 
@@ -279,9 +530,125 @@
             const rand = (a, b) => a + Math.random() * (b - a);
             const lerp = (a, b, t) => a + (b - a) * t;
 
-            const storageKey = 'neon_drift_best_v1';
-            let best = Number(localStorage.getItem(storageKey) || 0);
-            bestEl.textContent = best.toString();
+            const storageKeyBest = 'neon_drift_best_v4';
+            const storageKeySelected = 'neon_drift_selected_skin_v4';
+
+            let best = Number(localStorage.getItem(storageKeyBest) || 0);
+            if (!Number.isFinite(best)) best = 0;
+            best = Math.max(0, Math.floor(best));
+            localStorage.setItem(storageKeyBest, String(best));
+
+            const unlocks = [
+                { score: 0, name: 'Starter', bodyHue: 190, accentHue: 310, trail: false },
+                { score: 1500, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: false },
+                { score: 3500, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
+                { score: 6500, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
+                { score: 10000, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
+                { score: 15000, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true }
+            ];
+
+            function unlockedMaxIndexFromBest(b) {
+                let idx = 0;
+                for (let i = unlocks.length - 1; i >= 0; i--) {
+                    if (b >= unlocks[i].score) { idx = i; break; }
+                }
+                return idx;
+            }
+
+            let unlockedMax = unlockedMaxIndexFromBest(best);
+
+            let selectedSkinIndex = Number(localStorage.getItem(storageKeySelected) || 0);
+            if (!Number.isFinite(selectedSkinIndex)) selectedSkinIndex = 0;
+            selectedSkinIndex = clamp(Math.floor(selectedSkinIndex), 0, unlocks.length - 1);
+
+            if (selectedSkinIndex > unlockedMax) selectedSkinIndex = unlockedMax;
+            localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
+
+            function currentSkin() {
+                return unlocks[selectedSkinIndex] || unlocks[0];
+            }
+
+            function setSkinPillVisuals() {
+                const s = currentSkin();
+                skinNameEl.textContent = s.name;
+
+                const dotColor = `hsl(${s.bodyHue} 95% 65%)`;
+                const borderColor = `hsla(${s.bodyHue}, 95%, 70%, 0.35)`;
+                skinDotEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${dotColor})`;
+                skinDotEl.style.boxShadow = `0 0 18px hsla(${s.bodyHue}, 95%, 65%, 0.55)`;
+                skinPillEl.style.borderColor = borderColor;
+            }
+
+            function nextUnlockText() {
+                const next = unlocks[unlockedMax + 1];
+                if (!next) return 'None';
+                return next.score + ' pts';
+            }
+
+            function renderCosmeticsGrid() {
+                cosmeticsGrid.innerHTML = '';
+                for (let i = 0; i < unlocks.length; i++) {
+                    const s = unlocks[i];
+                    const unlocked = (best >= s.score);
+                    const selected = (i === selectedSkinIndex);
+
+                    const item = document.createElement('div');
+                    item.className = 'cosmeticItem' + (selected ? ' selected' : '');
+                    item.setAttribute('role', 'button');
+                    item.tabIndex = 0;
+
+                    const sw = document.createElement('div');
+                    sw.className = 'cosmeticSwatch';
+                    sw.style.background = `linear-gradient(90deg, hsla(${s.bodyHue}, 95%, 65%, 0.38), hsla(${s.accentHue}, 95%, 65%, 0.30))`;
+                    sw.style.borderColor = `hsla(${s.bodyHue}, 95%, 70%, 0.20)`;
+
+                    const nm = document.createElement('div');
+                    nm.className = 'cosmeticName';
+                    nm.textContent = s.name;
+
+                    const req = document.createElement('div');
+                    req.className = 'cosmeticReq';
+                    req.textContent = unlocked ? 'Unlocked' : ('Unlock at ' + s.score);
+
+                    item.appendChild(sw);
+                    item.appendChild(nm);
+                    item.appendChild(req);
+
+                    if (!unlocked) {
+                        const ov = document.createElement('div');
+                        ov.className = 'lockedOverlay';
+
+                        const li = document.createElement('div');
+                        li.className = 'lockIcon';
+                        li.textContent = '🔒';
+
+                        const tx = document.createElement('div');
+                        tx.textContent = 'Locked';
+
+                        ov.appendChild(li);
+                        ov.appendChild(tx);
+                        item.appendChild(ov);
+                    }
+
+                    const selectThis = () => {
+                        if (!unlocked) return;
+                        selectedSkinIndex = i;
+                        localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
+                        setSkinPillVisuals();
+                        renderCosmeticsGrid();
+                    };
+
+                    item.addEventListener('click', selectThis);
+                    item.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectThis(); }
+                    });
+
+                    cosmeticsGrid.appendChild(item);
+                }
+            }
+
+            bestEl.textContent = String(best);
+            setSkinPillVisuals();
 
             let running = false;
             let gameOver = false;
@@ -289,58 +656,88 @@
             const state = {
                 t: 0,
                 score: 0,
-                difficulty: 0,
                 shake: 0,
+
                 stars: [],
                 asteroids: [],
                 particles: [],
-                lastSpawn: 0,
-                pointer: { active: false, x: W * 0.5, y: H * 0.7 },
-                player: {
-                    x: W * 0.5,
-                    y: H * 0.7,
-                    vx: 0,
-                    vy: 0,
-                    r: 14,
-                    hp: 1,
-                    inv: 0
-                }
-            };
+                floatTexts: [],
 
-            function reset() {
-                state.t = 0;
-                state.score = 0;
-                state.difficulty = 0;
-                state.shake = 0;
-                state.asteroids.length = 0;
-                state.particles.length = 0;
-                state.player.x = W * 0.5;
-                state.player.y = H * 0.72;
-                state.player.vx = 0;
-                state.player.vy = 0;
-                state.player.inv = 0;
-                scoreEl.textContent = '0';
-                gameOver = false;
-                initStars();
-            }
+                lastSpawn: 0,
+
+                pointer: { active: false, x: 0, y: 0 },
+
+                combo: { mult: 1, timer: 0, max: 1, nearCount: 0 },
+
+                storm: { active: false, timer: 0, nextAt: 20 },
+
+                dash: { cd: 8, timer: 0, active: false, activeTimer: 0, activeDur: 0.24 },
+
+                player: { x: 0, y: 0, vx: 0, vy: 0, r: 14 }
+            };
 
             function initStars() {
                 state.stars.length = 0;
                 const n = Math.floor((W * H) / 18000);
                 for (let i = 0; i < n; i++) {
-                    state.stars.push({
-                        x: Math.random() * W,
-                        y: Math.random() * H,
-                        z: rand(0.2, 1.0),
-                        tw: rand(0, Math.PI * 2)
-                    });
+                    state.stars.push({ x: Math.random() * W, y: Math.random() * H, z: rand(0.2, 1.0), tw: rand(0, Math.PI * 2) });
                 }
             }
 
-            function spawnAsteroid() {
+            function addFloatText(x, y, text, hue) {
+                state.floatTexts.push({ x, y, text, hue, life: 0.9, ttl: 0.9 });
+            }
+
+            function reset() {
+                state.t = 0;
+                state.score = 0;
+                state.shake = 0;
+
+                state.asteroids.length = 0;
+                state.particles.length = 0;
+                state.floatTexts.length = 0;
+
+                state.lastSpawn = 0;
+
+                state.combo.mult = 1;
+                state.combo.timer = 0;
+                state.combo.max = 1;
+                state.combo.nearCount = 0;
+
+                state.storm.active = false;
+                state.storm.timer = 0;
+                state.storm.nextAt = 20;
+
+                state.dash.timer = 0;
+                state.dash.active = false;
+                state.dash.activeTimer = 0;
+
+                state.player.x = W * 0.5;
+                state.player.y = H * 0.72;
+                state.player.vx = 0;
+                state.player.vy = 0;
+
+                state.pointer.active = false;
+                state.pointer.x = state.player.x;
+                state.pointer.y = state.player.y;
+
+                scoreEl.textContent = '0';
+                comboEl.textContent = 'x1';
+                stormTextEl.textContent = 'Calm';
+                stormDotEl.classList.remove('dangerDot');
+                stormPillEl.style.borderColor = 'rgba(86,242,255,.20)';
+
+                initStars();
+            }
+
+            function spawnAsteroid(extraSpeedMul = 1) {
                 const edge = Math.floor(Math.random() * 4);
                 let x, y, vx, vy;
-                const speed = rand(140, 260) + state.difficulty * 65;
+
+                const baseSpeed = rand(140, 260);
+                const diff = Math.min(4, state.t / 22);
+                const speed = (baseSpeed + diff * 70) * extraSpeedMul;
+
                 const angleToCenter = (x0, y0) => Math.atan2(H * 0.5 - y0, W * 0.5 - x0);
 
                 if (edge === 0) { x = rand(0, W); y = -30; }
@@ -357,19 +754,12 @@
 
                 const jag = [];
                 const verts = Math.floor(rand(7, 12));
-                for (let i = 0; i < verts; i++) {
-                    jag.push(rand(0.75, 1.25));
-                }
+                for (let i = 0; i < verts; i++) jag.push(rand(0.75, 1.25));
 
-                state.asteroids.push({
-                    x, y, vx, vy, r,
-                    a: rand(0, Math.PI * 2),
-                    spin,
-                    jag
-                });
+                state.asteroids.push({ x, y, vx, vy, r, a: rand(0, Math.PI * 2), spin, jag, nearMissed: false });
             }
 
-            function burst(x, y, base, spread, count, life, spdMin, spdMax) {
+            function burst(x, y, base, spread, count, life, spdMin, spdMax, hueOverride = null) {
                 for (let i = 0; i < count; i++) {
                     const a = base + rand(-spread, spread);
                     const sp = rand(spdMin, spdMax);
@@ -380,31 +770,44 @@
                         r: rand(1.2, 2.8),
                         life,
                         ttl: life,
-                        hue: Math.random() < 0.5 ? 185 : 310
+                        hue: hueOverride !== null ? hueOverride : (Math.random() < 0.5 ? 185 : 310)
                     });
                 }
             }
 
             function setOverlay(mode) {
                 if (mode === 'start') {
+                    ovStats.classList.add('hide');
+                    cosmeticsWrap.classList.add('hide');
                     ovTitle.textContent = 'Neon Drift';
                     ovDesc.innerHTML =
                         'Dodge the incoming asteroids. Survive as long as you can.' +
                         '<br><br>' +
-                        'Desktop controls: <span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> or arrow keys.' +
+                        'Desktop: <span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> or arrows. Dash: <span class="kbd">Space</span>.' +
                         '<br>' +
-                        'Mobile controls: drag anywhere to steer.';
+                        'Mobile: drag to steer. Tap to start. Double tap to dash.';
                     playBtn.textContent = 'Play';
                     overlay.classList.remove('hide');
                     return;
                 }
                 if (mode === 'over') {
+                    ovStats.classList.remove('hide');
+                    cosmeticsWrap.classList.remove('hide');
+
+                    const s = Math.floor(state.score);
+                    stSurvive.textContent = Math.floor(state.t) + 's';
+                    stNear.textContent = String(state.combo.nearCount);
+                    stCombo.textContent = 'x' + String(state.combo.max);
+                    stNext.textContent = nextUnlockText();
+
                     ovTitle.textContent = 'Game Over';
                     ovDesc.innerHTML =
-                        'Score: <b>' + Math.floor(state.score) + '</b>' +
+                        'Score: <b>' + s + '</b>' +
                         '<br>Best: <b>' + best + '</b>' +
-                        '<br><br>Press <span class="kbd">Space</span> or tap Play to try again.';
+                        '<br><br>Select a cosmetic below. Locked skins show their unlock score.';
                     playBtn.textContent = 'Play Again';
+
+                    renderCosmeticsGrid();
                     overlay.classList.remove('hide');
                     return;
                 }
@@ -414,17 +817,36 @@
             function start() {
                 reset();
                 running = true;
+                gameOver = false;
                 setOverlay('hide');
             }
 
             function end() {
                 running = false;
                 gameOver = true;
-                if (Math.floor(state.score) > best) {
-                    best = Math.floor(state.score);
-                    localStorage.setItem(storageKey, String(best));
+
+                const finalScore = Math.floor(state.score);
+
+                if (finalScore > best) {
+                    best = finalScore;
+                    localStorage.setItem(storageKeyBest, String(best));
                     bestEl.textContent = String(best);
+
+                    const prevUnlocked = unlockedMax;
+                    unlockedMax = unlockedMaxIndexFromBest(best);
+
+                    if (unlockedMax > prevUnlocked) {
+                        const newSkin = unlocks[unlockedMax];
+                        addFloatText(W * 0.5, H * 0.22, 'UNLOCKED ' + newSkin.name, newSkin.bodyHue);
+
+                        if (selectedSkinIndex < prevUnlocked + 1) {
+                            selectedSkinIndex = unlockedMax;
+                            localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
+                            setSkinPillVisuals();
+                        }
+                    }
                 }
+
                 setOverlay('over');
             }
 
@@ -444,11 +866,13 @@
 
             const keys = new Set();
             addEventListener('keydown', (e) => {
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' '].includes(e.key)) e.preventDefault();
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' ', 'Shift'].includes(e.key)) e.preventDefault();
                 keys.add(e.key);
                 if (e.key === ' ' && gameOver) start();
                 if (e.key === 'Enter' && !running) start();
+                if (e.key === ' ' && running) tryDash();
             }, { passive: false });
+
             addEventListener('keyup', (e) => keys.delete(e.key), { passive: true });
 
             function pointerPos(e) {
@@ -456,11 +880,17 @@
                 return { x: t.clientX, y: t.clientY };
             }
 
+            let lastTapTime = 0;
             canvas.addEventListener('pointerdown', (e) => {
                 canvas.setPointerCapture(e.pointerId);
                 state.pointer.active = true;
                 const p = pointerPos(e);
                 state.pointer.x = p.x; state.pointer.y = p.y;
+
+                const now = performance.now();
+                if (now - lastTapTime < 320 && running) tryDash();
+                lastTapTime = now;
+
                 if (!running) start();
             }, { passive: true });
 
@@ -477,6 +907,47 @@
                 const dx = ax - bx, dy = ay - by;
                 const rr = ar + br;
                 return dx * dx + dy * dy <= rr * rr;
+            }
+
+            function tryDash() {
+                if (state.dash.timer > 0) return;
+
+                state.dash.timer = state.dash.cd;
+                state.dash.active = true;
+                state.dash.activeTimer = state.dash.activeDur;
+
+                const p = state.player;
+
+                let ax = 0, ay = 0;
+                const up = keys.has('ArrowUp') || keys.has('w') || keys.has('W');
+                const down = keys.has('ArrowDown') || keys.has('s') || keys.has('S');
+                const left = keys.has('ArrowLeft') || keys.has('a') || keys.has('A');
+                const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D');
+
+                if (up) ay -= 1;
+                if (down) ay += 1;
+                if (left) ax -= 1;
+                if (right) ax += 1;
+
+                if (state.pointer.active) {
+                    const dx = state.pointer.x - p.x;
+                    const dy = state.pointer.y - p.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > 2) { ax += dx / dist; ay += dy / dist; }
+                }
+
+                const mag = Math.hypot(ax, ay);
+                if (mag > 0) { ax /= mag; ay /= mag; } else { ax = 0; ay = -1; }
+
+                const dashSpeed = 980;
+                p.vx += ax * dashSpeed;
+                p.vy += ay * dashSpeed;
+
+                state.shake = 6;
+
+                const s = currentSkin();
+                burst(p.x, p.y, Math.atan2(ay, ax) + Math.PI, 1.7, 60, 0.55, 120, 560, s.accentHue);
+                addFloatText(p.x, p.y - 22, 'DASH', s.accentHue);
             }
 
             function drawAsteroid(a) {
@@ -511,19 +982,35 @@
             }
 
             function drawPlayer(p) {
+                const s = currentSkin();
+
                 ctx.save();
                 ctx.translate(p.x, p.y);
+
                 const ang = Math.atan2(p.vy, p.vx);
                 const hasVel = (p.vx * p.vx + p.vy * p.vy) > 20;
                 ctx.rotate(hasVel ? ang : -Math.PI / 2);
 
-                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 26);
-                glow.addColorStop(0, 'rgba(86,242,255,0.55)');
-                glow.addColorStop(1, 'rgba(86,242,255,0)');
+                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 28);
+                glow.addColorStop(0, `hsla(${s.bodyHue}, 95%, 65%, 0.60)`);
+                glow.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = glow;
                 ctx.beginPath();
-                ctx.arc(0, 0, 26, 0, Math.PI * 2);
+                ctx.arc(0, 0, 28, 0, Math.PI * 2);
                 ctx.fill();
+
+                if (s.trail) {
+                    const tailAng = (hasVel ? ang : -Math.PI / 2) + Math.PI;
+                    const tx = Math.cos(tailAng) * 12;
+                    const ty = Math.sin(tailAng) * 12;
+                    const trail = ctx.createRadialGradient(tx, ty, 0, tx, ty, 24);
+                    trail.addColorStop(0, `hsla(${s.accentHue}, 95%, 65%, 0.34)`);
+                    trail.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = trail;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 24, 0, Math.PI * 2);
+                    ctx.fill();
+                }
 
                 ctx.beginPath();
                 ctx.moveTo(18, 0);
@@ -533,15 +1020,15 @@
                 ctx.closePath();
 
                 const body = ctx.createLinearGradient(-14, -10, 18, 10);
-                body.addColorStop(0, 'rgba(255,79,216,0.18)');
-                body.addColorStop(0.55, 'rgba(86,242,255,0.22)');
+                body.addColorStop(0, `hsla(${s.accentHue}, 95%, 60%, 0.20)`);
+                body.addColorStop(0.55, `hsla(${s.bodyHue}, 95%, 65%, 0.26)`);
                 body.addColorStop(1, 'rgba(255,255,255,0.06)');
 
                 ctx.fillStyle = body;
                 ctx.fill();
 
                 ctx.lineWidth = 1.2;
-                ctx.strokeStyle = 'rgba(86,242,255,0.35)';
+                ctx.strokeStyle = `hsla(${s.bodyHue}, 95%, 70%, 0.45)`;
                 ctx.stroke();
 
                 ctx.globalAlpha = 0.9;
@@ -565,6 +1052,19 @@
                 ctx.globalAlpha = 1;
             }
 
+            function drawFloatTexts() {
+                for (const ft of state.floatTexts) {
+                    const t = ft.ttl / ft.life;
+                    ctx.globalAlpha = clamp(t, 0, 1);
+                    ctx.font = '900 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = `hsla(${ft.hue}, 95%, 70%, 1)`;
+                    ctx.fillText(ft.text, ft.x, ft.y);
+                }
+                ctx.globalAlpha = 1;
+            }
+
             function drawStars(dt) {
                 for (const s of state.stars) {
                     s.tw += dt * (0.8 + s.z);
@@ -576,6 +1076,18 @@
                     ctx.fillRect(s.x, s.y, 1 + s.z, 1 + s.z);
                 }
                 ctx.globalAlpha = 1;
+            }
+
+            function updateStormUI() {
+                if (state.storm.active) {
+                    stormTextEl.textContent = 'Storm';
+                    stormDotEl.classList.add('dangerDot');
+                    stormPillEl.style.borderColor = 'rgba(255,60,90,.30)';
+                } else {
+                    stormTextEl.textContent = 'Calm';
+                    stormDotEl.classList.remove('dangerDot');
+                    stormPillEl.style.borderColor = 'rgba(86,242,255,.20)';
+                }
             }
 
             let last = performance.now();
@@ -593,17 +1105,53 @@
 
                 if (running) {
                     state.t += dt;
-                    state.score += dt * 10;
-                    state.difficulty = Math.min(4, state.t / 22);
 
-                    scoreEl.textContent = String(Math.floor(state.score));
+                    if (state.combo.timer > 0) {
+                        state.combo.timer = Math.max(0, state.combo.timer - dt);
+                        if (state.combo.timer === 0) state.combo.mult = 1;
+                    } else state.combo.mult = 1;
 
-                    const spawnInterval = lerp(0.95, 0.42, state.difficulty / 4);
+                    state.combo.max = Math.max(state.combo.max, state.combo.mult);
+                    comboEl.textContent = 'x' + String(state.combo.mult);
+
+                    if (state.storm.active) {
+                        state.storm.timer -= dt;
+                        if (state.storm.timer <= 0) {
+                            state.storm.active = false;
+                            updateStormUI();
+                        }
+                    } else {
+                        if (state.t >= state.storm.nextAt) {
+                            state.storm.active = true;
+                            state.storm.timer = 5;
+                            state.storm.nextAt += 20;
+                            updateStormUI();
+                            addFloatText(W * 0.5, 90, 'ASTEROID STORM', 0);
+                        }
+                    }
+
+                    if (state.dash.timer > 0) state.dash.timer = Math.max(0, state.dash.timer - dt);
+                    if (state.dash.activeTimer > 0) {
+                        state.dash.activeTimer = Math.max(0, state.dash.activeTimer - dt);
+                        if (state.dash.activeTimer === 0) state.dash.active = false;
+                    }
+
+                    const dashPct = 1 - (state.dash.timer / state.dash.cd);
+                    dashBarEl.style.width = (dashPct * 100).toFixed(1) + '%';
+
+                    const diff = Math.min(4, state.t / 22);
+                    const baseInterval = lerp(0.95, 0.42, diff / 4);
+                    const stormMul = state.storm.active ? 0.55 : 1;
+                    const spawnInterval = baseInterval * stormMul;
+
                     state.lastSpawn += dt;
                     if (state.lastSpawn >= spawnInterval) {
                         state.lastSpawn = 0;
-                        spawnAsteroid();
-                        if (Math.random() < 0.22 + state.difficulty * 0.06) spawnAsteroid();
+                        spawnAsteroid(state.storm.active ? 1.12 : 1);
+
+                        const extraChance = (0.22 + diff * 0.06) * (state.storm.active ? 1.35 : 1);
+                        if (Math.random() < extraChance) spawnAsteroid(state.storm.active ? 1.12 : 1);
+                        if (state.storm.active && Math.random() < 0.25) spawnAsteroid(1.18);
                     }
 
                     const p = state.player;
@@ -624,16 +1172,11 @@
                         const dx = state.pointer.x - p.x;
                         const dy = state.pointer.y - p.y;
                         const dist = Math.hypot(dx, dy);
-                        if (dist > 2) {
-                            ax += dx / dist;
-                            ay += dy / dist;
-                        }
+                        if (dist > 2) { ax += dx / dist; ay += dy / dist; }
                     }
 
                     const mag = Math.hypot(ax, ay);
-                    if (mag > 0) {
-                        ax /= mag; ay /= mag;
-                    }
+                    if (mag > 0) { ax /= mag; ay /= mag; }
 
                     p.vx += ax * accel * dt;
                     p.vy += ay * accel * dt;
@@ -651,10 +1194,11 @@
                     if (p.y < pad) { p.y = pad; p.vy *= -0.25; }
                     if (p.y > H - pad) { p.y = H - pad; p.vy *= -0.25; }
 
+                    const s = currentSkin();
                     const sp = Math.hypot(p.vx, p.vy);
-                    if (sp > 40 && Math.random() < 0.55) {
+                    if (sp > 40 && Math.random() < (s.trail ? 0.75 : 0.55)) {
                         const tailAng = Math.atan2(p.vy, p.vx) + Math.PI;
-                        burst(p.x - Math.cos(tailAng) * 10, p.y - Math.sin(tailAng) * 10, tailAng, 0.45, 1, 0.45, 40, 140);
+                        burst(p.x - Math.cos(tailAng) * 10, p.y - Math.sin(tailAng) * 10, tailAng, 0.45, 1, 0.45, 40, 140, s.accentHue);
                     }
 
                     for (const a of state.asteroids) {
@@ -681,32 +1225,90 @@
                         if (state.particles[i].ttl <= 0) state.particles.splice(i, 1);
                     }
 
+                    for (const ft of state.floatTexts) {
+                        ft.y -= dt * 26;
+                        ft.ttl -= dt;
+                    }
+                    for (let i = state.floatTexts.length - 1; i >= 0; i--) {
+                        if (state.floatTexts[i].ttl <= 0) state.floatTexts.splice(i, 1);
+                    }
+
+                    // Score tuning: slower base score so unlocks take longer
+                    let scoreRate = 4.0;
+
+                    const multBoost = 1 + (state.combo.mult - 1) * 0.08;
+                    scoreRate *= multBoost;
+
+                    if (state.storm.active) scoreRate *= 1.05;
+
+                    state.score += dt * scoreRate;
+                    scoreEl.textContent = String(Math.floor(state.score));
+
                     for (const a of state.asteroids) {
                         const hit = circleHit(p.x, p.y, p.r * 0.9, a.x, a.y, a.r * 0.82);
                         if (hit) {
+                            if (state.dash.active) {
+                                const ang = Math.atan2(a.y - p.y, a.x - p.x);
+                                burst(a.x, a.y, ang, Math.PI, 50, 0.55, 120, 520, s.bodyHue);
+                                a.vx += Math.cos(ang) * 260;
+                                a.vy += Math.sin(ang) * 260;
+                                a.nearMissed = true;
+                                addFloatText(p.x, p.y - 18, 'PHASE', s.bodyHue);
+                                continue;
+                            }
                             const ang = Math.atan2(p.y - a.y, p.x - a.x);
-                            burst(p.x, p.y, ang, Math.PI, 90, 0.65, 80, 420);
+                            burst(p.x, p.y, ang, Math.PI, 90, 0.65, 80, 420, 310);
                             state.shake = 10;
                             end();
                             break;
                         }
+
+                        if (!a.nearMissed) {
+                            const dx = p.x - a.x;
+                            const dy = p.y - a.y;
+                            const dist = Math.hypot(dx, dy);
+
+                            const dangerMargin = 22;
+                            const nearRange = p.r + a.r + dangerMargin;
+                            const collideRange = p.r * 0.9 + a.r * 0.82;
+
+                            if (dist <= nearRange && dist > collideRange) {
+                                a.nearMissed = true;
+
+                                state.combo.timer = 1.15;
+                                state.combo.mult = Math.min(6, state.combo.mult + 1);
+                                state.combo.max = Math.max(state.combo.max, state.combo.mult);
+                                state.combo.nearCount += 1;
+
+                                const bonus = 20 + (state.combo.mult * 15);
+                                state.score += bonus;
+
+                                burst(p.x, p.y, Math.atan2(dy, dx), 1.5, 22, 0.42, 80, 240, 185);
+                                addFloatText(p.x, p.y - 22, 'NEAR MISS +' + bonus, 185);
+                            }
+                        }
                     }
                 }
 
-                if (state.shake > 0) {
-                    state.shake = Math.max(0, state.shake - dt * 22);
-                }
+                if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 22);
 
                 const sx = (Math.random() - 0.5) * state.shake;
                 const sy = (Math.random() - 0.5) * state.shake;
+
                 ctx.save();
                 ctx.translate(sx, sy);
 
                 for (const a of state.asteroids) drawAsteroid(a);
                 drawParticles();
                 drawPlayer(state.player);
+                drawFloatTexts();
 
                 ctx.restore();
+
+                if (state.storm.active) {
+                    ctx.fillStyle = 'rgba(255,60,90,0.06)';
+                    ctx.fillRect(0, 0, W, H);
+                }
 
                 const vign = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.2, W / 2, H / 2, Math.max(W, H) * 0.75);
                 vign.addColorStop(0, 'rgba(0,0,0,0)');
