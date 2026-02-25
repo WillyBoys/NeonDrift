@@ -560,8 +560,8 @@
             const rand = (a, b) => a + Math.random() * (b - a);
             const lerp = (a, b, t) => a + (b - a) * t;
 
-            const storageKeyBest = 'neon_drift_best_v6';
-            const storageKeySelected = 'neon_drift_selected_skin_v6';
+            const storageKeyBest = 'neon_drift_best_v7';
+            const storageKeySelected = 'neon_drift_selected_skin_v7';
 
             let best = Number(localStorage.getItem(storageKeyBest) || 0);
             if (!Number.isFinite(best)) best = 0;
@@ -785,24 +785,16 @@
                 t: 0,
                 score: 0,
                 shake: 0,
-
                 stars: [],
                 asteroids: [],
                 particles: [],
                 floatTexts: [],
-
                 lastSpawn: 0,
-
                 pointer: { active: false, x: 0, y: 0 },
-
                 combo: { mult: 1, timer: 0, max: 1, nearCount: 0 },
-
                 storm: { active: false, timer: 0, nextAt: 20 },
-
                 dash: { cd: 8, timer: 0, active: false, activeTimer: 0, activeDur: 0.24 },
-
                 level: { lvl: 1, xp: 0, next: 30, cap: 20 },
-
                 player: { x: 0, y: 0, vx: 0, vy: 0, r: 14 }
             };
 
@@ -822,46 +814,36 @@
                 state.t = 0;
                 state.score = 0;
                 state.shake = 0;
-
                 state.asteroids.length = 0;
                 state.particles.length = 0;
                 state.floatTexts.length = 0;
-
                 state.lastSpawn = 0;
-
                 state.combo.mult = 1;
                 state.combo.timer = 0;
                 state.combo.max = 1;
                 state.combo.nearCount = 0;
-
                 state.storm.active = false;
                 state.storm.timer = 0;
                 state.storm.nextAt = 20;
-
                 state.dash.timer = 0;
                 state.dash.active = false;
                 state.dash.activeTimer = 0;
-
                 state.level.lvl = 1;
                 state.level.xp = 0;
                 state.level.next = 30;
                 levelTextEl.textContent = 'Lvl 1';
-
                 state.player.x = W * 0.5;
                 state.player.y = H * 0.72;
                 state.player.vx = 0;
                 state.player.vy = 0;
-
                 state.pointer.active = false;
                 state.pointer.x = state.player.x;
                 state.pointer.y = state.player.y;
-
                 scoreEl.textContent = '0';
                 comboEl.textContent = 'x1';
                 stormTextEl.textContent = 'Calm';
                 stormDotEl.classList.remove('dangerDot');
                 stormPillEl.style.borderColor = 'rgba(86,242,255,.20)';
-
                 initStars();
             }
 
@@ -922,7 +904,7 @@
                         'Desktop: <span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> or arrows. Dash: <span class="kbd">Space</span>.' +
                         '<br>' +
                         'Mobile: drag to steer. Tap to start. Double tap to dash.' +
-                        '<br><br>New: level up during a run to increase ship speed.';
+                        '<br><br>Level up during a run to increase ship speed.';
                     playBtn.textContent = 'Play';
                     overlay.classList.remove('hide');
                     return;
@@ -1034,7 +1016,25 @@
             });
 
             const keys = new Set();
+
+            function isTypingInField() {
+                const ae = document.activeElement;
+                if (!ae) return false;
+                if (ae === lbNameEl) return true;
+                const tag = ae.tagName;
+                return tag === 'INPUT' || tag === 'TEXTAREA' || ae.isContentEditable === true;
+            }
+
             addEventListener('keydown', (e) => {
+                // Fix: allow typing W A S D inside the name input (and any text field)
+                if (isTypingInField()) {
+                    if (document.activeElement === lbNameEl && e.key === 'Enter') {
+                        e.preventDefault();
+                        lbSubmitBtn.click();
+                    }
+                    return;
+                }
+
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' ', 'Shift', 'Enter'].includes(e.key)) e.preventDefault();
                 keys.add(e.key);
                 if (e.key === ' ' && gameOver) start();
@@ -1042,7 +1042,10 @@
                 if (e.key === ' ' && running) tryDash();
             }, { passive: false });
 
-            addEventListener('keyup', (e) => keys.delete(e.key), { passive: true });
+            addEventListener('keyup', (e) => {
+                if (isTypingInField()) return;
+                keys.delete(e.key);
+            }, { passive: true });
 
             function pointerPos(e) {
                 const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
@@ -1431,7 +1434,10 @@
                     scoreEl.textContent = String(Math.floor(state.score));
 
                     for (const a of state.asteroids) {
-                        const hit = circleHit(p.x, p.y, p.r * 0.9, a.x, a.y, a.r * 0.82);
+                        const dx = p.x - a.x;
+                        const dy = p.y - a.y;
+
+                        const hit = (dx * dx + dy * dy) <= (p.r * 0.9 + a.r * 0.82) ** 2;
                         if (hit) {
                             if (state.dash.active) {
                                 const ang = Math.atan2(a.y - p.y, a.x - p.x);
@@ -1442,18 +1448,14 @@
                                 addFloatText(p.x, p.y - 18, 'PHASE', s.bodyHue);
                                 continue;
                             }
-                            const ang = Math.atan2(p.y - a.y, p.x - a.x);
-                            burst(p.x, p.y, ang, Math.PI, 90, 0.65, 80, 420, 310);
+                            burst(p.x, p.y, Math.atan2(p.y - a.y, p.x - a.x), Math.PI, 90, 0.65, 80, 420, 310);
                             state.shake = 10;
                             end();
                             break;
                         }
 
                         if (!a.nearMissed) {
-                            const dx = p.x - a.x;
-                            const dy = p.y - a.y;
                             const dist = Math.hypot(dx, dy);
-
                             const dangerMargin = 22;
                             const nearRange = p.r + a.r + dangerMargin;
                             const collideRange = p.r * 0.9 + a.r * 0.82;
@@ -1487,9 +1489,29 @@
                 ctx.translate(sx, sy);
 
                 for (const a of state.asteroids) drawAsteroid(a);
-                drawParticles();
+
+                for (const pt of state.particles) {
+                    const t = pt.ttl / pt.life;
+                    ctx.globalAlpha = Math.max(0, Math.min(1, t));
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsla(${pt.hue}, 95%, 65%, 1)`;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+
                 drawPlayer(state.player);
-                drawFloatTexts();
+
+                for (const ft of state.floatTexts) {
+                    const t = ft.ttl / ft.life;
+                    ctx.globalAlpha = Math.max(0, Math.min(1, t));
+                    ctx.font = '900 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = `hsla(${ft.hue}, 95%, 70%, 1)`;
+                    ctx.fillText(ft.text, ft.x, ft.y);
+                }
+                ctx.globalAlpha = 1;
 
                 ctx.restore();
 
@@ -1507,6 +1529,7 @@
                 requestAnimationFrame(frame);
             }
 
+            renderCosmeticsGrid();
             setOverlay('start');
             requestAnimationFrame(frame);
         })();
