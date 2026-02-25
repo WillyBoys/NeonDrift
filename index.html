@@ -399,6 +399,7 @@
                 <div class="label">Score</div>
                 <div class="value" id="score">0</div>
                 <div class="rowInline" style="margin-top:8px">
+                    <span class="badgePill"><span class="dot"></span><span id="levelText">Lvl 1</span></span>
                     <span class="badgePill" id="skinPill"><span class="dot" id="skinDot"></span><span
                             id="skinName">Starter</span></span>
                 </div>
@@ -487,6 +488,8 @@
             const comboEl = document.getElementById('combo');
             const dashBarEl = document.getElementById('dashBar');
 
+            const levelTextEl = document.getElementById('levelText');
+
             const skinNameEl = document.getElementById('skinName');
             const skinPillEl = document.getElementById('skinPill');
             const skinDotEl = document.getElementById('skinDot');
@@ -530,21 +533,22 @@
             const rand = (a, b) => a + Math.random() * (b - a);
             const lerp = (a, b, t) => a + (b - a) * t;
 
-            const storageKeyBest = 'neon_drift_best_v4';
-            const storageKeySelected = 'neon_drift_selected_skin_v4';
+            const storageKeyBest = 'neon_drift_best_v5';
+            const storageKeySelected = 'neon_drift_selected_skin_v5';
 
             let best = Number(localStorage.getItem(storageKeyBest) || 0);
             if (!Number.isFinite(best)) best = 0;
             best = Math.max(0, Math.floor(best));
             localStorage.setItem(storageKeyBest, String(best));
 
+            // Cosmetics unlock thresholds (easier than the v4 set, first unlock at 700)
             const unlocks = [
                 { score: 0, name: 'Starter', bodyHue: 190, accentHue: 310, trail: false },
-                { score: 400, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: false },
-                { score: 700, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
-                { score: 1000, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
-                { score: 1500, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
-                { score: 2000, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true }
+                { score: 500, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: false },
+                { score: 1000, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
+                { score: 1500, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
+                { score: 2000, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
+                { score: 3000, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true }
             ];
 
             function unlockedMaxIndexFromBest(b) {
@@ -673,6 +677,9 @@
 
                 dash: { cd: 8, timer: 0, active: false, activeTimer: 0, activeDur: 0.24 },
 
+                // Leveling per run
+                level: { lvl: 1, xp: 0, next: 30, cap: 20 },
+
                 player: { x: 0, y: 0, vx: 0, vy: 0, r: 14 }
             };
 
@@ -711,6 +718,11 @@
                 state.dash.timer = 0;
                 state.dash.active = false;
                 state.dash.activeTimer = 0;
+
+                state.level.lvl = 1;
+                state.level.xp = 0;
+                state.level.next = 30;
+                levelTextEl.textContent = 'Lvl 1';
 
                 state.player.x = W * 0.5;
                 state.player.y = H * 0.72;
@@ -785,7 +797,8 @@
                         '<br><br>' +
                         'Desktop: <span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> or arrows. Dash: <span class="kbd">Space</span>.' +
                         '<br>' +
-                        'Mobile: drag to steer. Tap to start. Double tap to dash.';
+                        'Mobile: drag to steer. Tap to start. Double tap to dash.' +
+                        '<br><br>New: level up during a run to increase ship speed.';
                     playBtn.textContent = 'Play';
                     overlay.classList.remove('hide');
                     return;
@@ -839,7 +852,8 @@
                         const newSkin = unlocks[unlockedMax];
                         addFloatText(W * 0.5, H * 0.22, 'UNLOCKED ' + newSkin.name, newSkin.bodyHue);
 
-                        if (selectedSkinIndex < prevUnlocked + 1) {
+                        // auto-select the newest unlocked skin (nice feel), but keep if player already chose something newer
+                        if (selectedSkinIndex <= prevUnlocked) {
                             selectedSkinIndex = unlockedMax;
                             localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
                             setSkinPillVisuals();
@@ -866,7 +880,7 @@
 
             const keys = new Set();
             addEventListener('keydown', (e) => {
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' ', 'Shift'].includes(e.key)) e.preventDefault();
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' ', 'Shift', 'Enter'].includes(e.key)) e.preventDefault();
                 keys.add(e.key);
                 if (e.key === ' ' && gameOver) start();
                 if (e.key === 'Enter' && !running) start();
@@ -1106,6 +1120,17 @@
                 if (running) {
                     state.t += dt;
 
+                    // Leveling: gain XP over time + from near misses
+                    state.level.xp += dt * 6;
+
+                    while (state.level.xp >= state.level.next && state.level.lvl < state.level.cap) {
+                        state.level.xp -= state.level.next;
+                        state.level.lvl += 1;
+                        state.level.next = Math.floor(state.level.next * 1.22 + 6);
+                        addFloatText(W * 0.5, 120, 'LEVEL UP ' + state.level.lvl, 185);
+                    }
+                    levelTextEl.textContent = 'Lvl ' + state.level.lvl;
+
                     if (state.combo.timer > 0) {
                         state.combo.timer = Math.max(0, state.combo.timer - dt);
                         if (state.combo.timer === 0) state.combo.mult = 1;
@@ -1155,7 +1180,13 @@
                     }
 
                     const p = state.player;
-                    const accel = 980;
+
+                    // Speed scales with level
+                    const lvl = Math.min(state.level.cap, state.level.lvl);
+                    const speedScale = 1 + (lvl - 1) * 0.02;
+
+                    const accel = 980 * speedScale;
+
                     let ax = 0, ay = 0;
 
                     const up = keys.has('ArrowUp') || keys.has('w') || keys.has('W');
@@ -1184,6 +1215,14 @@
                     const damp = 0.86;
                     p.vx *= Math.pow(damp, dt * 60);
                     p.vy *= Math.pow(damp, dt * 60);
+
+                    // Optional velocity cap that also scales with level
+                    const maxSpd = 620 * speedScale;
+                    const spdNow = Math.hypot(p.vx, p.vy);
+                    if (spdNow > maxSpd) {
+                        const k = maxSpd / spdNow;
+                        p.vx *= k; p.vy *= k;
+                    }
 
                     p.x += p.vx * dt;
                     p.y += p.vy * dt;
@@ -1233,12 +1272,10 @@
                         if (state.floatTexts[i].ttl <= 0) state.floatTexts.splice(i, 1);
                     }
 
-                    // Score tuning: slower base score so unlocks take longer
+                    // Score tuning (kept as requested)
                     let scoreRate = 4.0;
-
                     const multBoost = 1 + (state.combo.mult - 1) * 0.08;
                     scoreRate *= multBoost;
-
                     if (state.storm.active) scoreRate *= 1.05;
 
                     state.score += dt * scoreRate;
@@ -1279,6 +1316,9 @@
                                 state.combo.mult = Math.min(6, state.combo.mult + 1);
                                 state.combo.max = Math.max(state.combo.max, state.combo.mult);
                                 state.combo.nearCount += 1;
+
+                                // XP burst for near miss
+                                state.level.xp += 10;
 
                                 const bonus = 20 + (state.combo.mult * 15);
                                 state.score += bonus;
