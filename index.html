@@ -387,6 +387,118 @@
         .hide {
             display: none
         }
+
+        /* Small leaderboard panel on the left */
+        .sideBoard {
+            position: fixed;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: min(290px, calc(100vw - 32px));
+            max-height: 72vh;
+            overflow: auto;
+            pointer-events: auto;
+
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px var(--shadow);
+            border-radius: 18px;
+            padding: 12px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .sideHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .sideHeader .t {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-weight: 900;
+        }
+
+        .lbMiniRow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(255, 255, 255, .05);
+        }
+
+        .lbMiniLeft {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .lbMiniRank {
+            color: var(--muted);
+            font-weight: 900;
+            min-width: 28px;
+        }
+
+        .lbMiniName {
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .lbMiniScore {
+            font-weight: 900;
+        }
+
+        .lbControls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .lbControls input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .20);
+            color: var(--text);
+            outline: none;
+        }
+
+        .lbMsg {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 10px;
+            min-height: 16px;
+        }
+
+        .lbList {
+            display: grid;
+            gap: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .sideBoard {
+                top: auto;
+                bottom: 16px;
+                transform: none;
+                width: min(320px, calc(100vw - 32px));
+                max-height: 44vh;
+            }
+        }
     </style>
 </head>
 
@@ -430,6 +542,22 @@
         </div>
     </div>
 
+    <!-- Left side leaderboard panel -->
+    <div class="sideBoard hide" id="leaderSide">
+        <div class="sideHeader">
+            <div class="t">Global Top 10</div>
+            <button class="secondary" id="lbRefresh" style="padding:8px 10px;border-radius:12px">Refresh</button>
+        </div>
+
+        <div class="lbControls" id="lbControls">
+            <input id="lbName" placeholder="Name" maxlength="16" />
+            <button id="lbSubmit" style="padding:10px 12px;border-radius:12px">Submit</button>
+        </div>
+
+        <div class="lbMsg" id="lbMsg"></div>
+        <div class="lbList" id="lbList"></div>
+    </div>
+
     <div class="center" id="overlay">
         <div class="card">
             <div class="title">
@@ -463,23 +591,6 @@
                     <div style="font-size:12px;color:var(--muted)">Click a skin to select</div>
                 </div>
                 <div class="cosmeticsGrid" id="cosmeticsGrid"></div>
-            </div>
-
-            <div class="cosmeticsWrap hide" id="leaderWrap">
-                <div class="cosmeticsTitle">
-                    <div class="t">Global Top 10</div>
-                    <div style="font-size:12px;color:var(--muted)">Submit your run on game over</div>
-                </div>
-
-                <div class="rowInline" style="margin-bottom:10px;gap:8px;pointer-events:auto">
-                    <input id="lbName" placeholder="Name" maxlength="16"
-                        style="flex:1;min-width:160px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.20);color:var(--text);outline:none" />
-                    <button id="lbSubmit">Submit</button>
-                    <button class="secondary" id="lbRefresh">Refresh</button>
-                </div>
-
-                <div id="lbMsg" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-                <div id="lbList" style="display:grid;gap:8px"></div>
             </div>
 
             <div class="row" style="margin-top:14px">
@@ -530,7 +641,8 @@
             const cosmeticsWrap = document.getElementById('cosmeticsWrap');
             const cosmeticsGrid = document.getElementById('cosmeticsGrid');
 
-            const leaderWrap = document.getElementById('leaderWrap');
+            const leaderSide = document.getElementById('leaderSide');
+            const lbControls = document.getElementById('lbControls');
             const lbNameEl = document.getElementById('lbName');
             const lbSubmitBtn = document.getElementById('lbSubmit');
             const lbRefreshBtn = document.getElementById('lbRefresh');
@@ -538,7 +650,7 @@
             const lbListEl = document.getElementById('lbList');
 
             const LEADERBOARD_BASE = "https://neon-drift-leaderboard.willyboys.workers.dev";
-            const LB_NAME_KEY = "neon_drift_lb_name_v1";
+            const LB_NAME_KEY = "neon_drift_lb_name_v2";
 
             const DPR = () => Math.min(2, window.devicePixelRatio || 1);
 
@@ -560,8 +672,8 @@
             const rand = (a, b) => a + Math.random() * (b - a);
             const lerp = (a, b, t) => a + (b - a) * t;
 
-            const storageKeyBest = 'neon_drift_best_v7';
-            const storageKeySelected = 'neon_drift_selected_skin_v7';
+            const storageKeyBest = 'neon_drift_best_v8';
+            const storageKeySelected = 'neon_drift_selected_skin_v8';
 
             let best = Number(localStorage.getItem(storageKeyBest) || 0);
             if (!Number.isFinite(best)) best = 0;
@@ -701,34 +813,25 @@
 
                 for (let i = 0; i < safe.length; i++) {
                     const row = document.createElement("div");
-                    row.style.display = "flex";
-                    row.style.justifyContent = "space-between";
-                    row.style.alignItems = "center";
-                    row.style.padding = "10px 12px";
-                    row.style.borderRadius = "12px";
-                    row.style.border = "1px solid rgba(255,255,255,.10)";
-                    row.style.background = "rgba(255,255,255,.05)";
+                    row.className = "lbMiniRow";
 
                     const left = document.createElement("div");
-                    left.style.display = "flex";
-                    left.style.gap = "10px";
-                    left.style.alignItems = "center";
+                    left.className = "lbMiniLeft";
 
                     const rank = document.createElement("div");
+                    rank.className = "lbMiniRank";
                     rank.textContent = "#" + (i + 1);
-                    rank.style.color = "var(--muted)";
-                    rank.style.fontWeight = "900";
 
                     const name = document.createElement("div");
+                    name.className = "lbMiniName";
                     name.textContent = safe[i]?.name ?? "Unknown";
-                    name.style.fontWeight = "900";
 
                     left.appendChild(rank);
                     left.appendChild(name);
 
                     const score = document.createElement("div");
+                    score.className = "lbMiniScore";
                     score.textContent = String(safe[i]?.score ?? 0);
-                    score.style.fontWeight = "900";
 
                     row.appendChild(left);
                     row.appendChild(score);
@@ -741,20 +844,20 @@
             }
 
             async function fetchTop10() {
-                lbMsgEl.textContent = "Loading leaderboard...";
+                lbMsgEl.textContent = "Loading";
                 try {
                     const res = await fetch(LEADERBOARD_BASE + "/top", { method: "GET" });
                     const data = await res.json();
                     renderLeaderboard(data);
                     lbMsgEl.textContent = "";
                 } catch {
-                    lbMsgEl.textContent = "Could not load leaderboard";
+                    lbMsgEl.textContent = "Could not load";
                     renderLeaderboard([]);
                 }
             }
 
             async function submitScore(name, score) {
-                lbMsgEl.textContent = "Submitting...";
+                lbMsgEl.textContent = "Submitting";
                 try {
                     const res = await fetch(LEADERBOARD_BASE + "/submit", {
                         method: "POST",
@@ -818,32 +921,40 @@
                 state.particles.length = 0;
                 state.floatTexts.length = 0;
                 state.lastSpawn = 0;
+
                 state.combo.mult = 1;
                 state.combo.timer = 0;
                 state.combo.max = 1;
                 state.combo.nearCount = 0;
+
                 state.storm.active = false;
                 state.storm.timer = 0;
                 state.storm.nextAt = 20;
+
                 state.dash.timer = 0;
                 state.dash.active = false;
                 state.dash.activeTimer = 0;
+
                 state.level.lvl = 1;
                 state.level.xp = 0;
                 state.level.next = 30;
                 levelTextEl.textContent = 'Lvl 1';
+
                 state.player.x = W * 0.5;
                 state.player.y = H * 0.72;
                 state.player.vx = 0;
                 state.player.vy = 0;
+
                 state.pointer.active = false;
                 state.pointer.x = state.player.x;
                 state.pointer.y = state.player.y;
+
                 scoreEl.textContent = '0';
                 comboEl.textContent = 'x1';
                 stormTextEl.textContent = 'Calm';
                 stormDotEl.classList.remove('dangerDot');
                 stormPillEl.style.borderColor = 'rgba(86,242,255,.20)';
+
                 initStars();
             }
 
@@ -896,7 +1007,7 @@
                 if (mode === 'start') {
                     ovStats.classList.add('hide');
                     cosmeticsWrap.classList.add('hide');
-                    leaderWrap.classList.add('hide');
+                    leaderSide.classList.add('hide');
                     ovTitle.textContent = 'Neon Drift';
                     ovDesc.innerHTML =
                         'Dodge the incoming asteroids. Survive as long as you can.' +
@@ -909,10 +1020,11 @@
                     overlay.classList.remove('hide');
                     return;
                 }
+
                 if (mode === 'over') {
                     ovStats.classList.remove('hide');
                     cosmeticsWrap.classList.remove('hide');
-                    leaderWrap.classList.remove('hide');
+                    leaderSide.classList.remove('hide');
 
                     const s = Math.floor(state.score);
                     stSurvive.textContent = Math.floor(state.t) + 's';
@@ -924,7 +1036,8 @@
                     ovDesc.innerHTML =
                         'Score: <b>' + s + '</b>' +
                         '<br>Best: <b>' + best + '</b>' +
-                        '<br><br>Select a cosmetic below. Submit your run to the global leaderboard.';
+                        '<br><br>Select a cosmetic below. The leaderboard is on the left.';
+
                     playBtn.textContent = 'Play Again';
 
                     renderCosmeticsGrid();
@@ -932,11 +1045,13 @@
                     const savedName = localStorage.getItem(LB_NAME_KEY) || "";
                     if (savedName && !lbNameEl.value) lbNameEl.value = savedName;
 
+                    lbControls.style.display = "flex";
                     fetchTop10();
 
                     overlay.classList.remove('hide');
                     return;
                 }
+
                 overlay.classList.add('hide');
             }
 
@@ -1020,13 +1135,11 @@
             function isTypingInField() {
                 const ae = document.activeElement;
                 if (!ae) return false;
-                if (ae === lbNameEl) return true;
                 const tag = ae.tagName;
                 return tag === 'INPUT' || tag === 'TEXTAREA' || ae.isContentEditable === true;
             }
 
             addEventListener('keydown', (e) => {
-                // Fix: allow typing W A S D inside the name input (and any text field)
                 if (isTypingInField()) {
                     if (document.activeElement === lbNameEl && e.key === 'Enter') {
                         e.preventDefault();
@@ -1075,12 +1188,6 @@
             canvas.addEventListener('pointerup', () => state.pointer.active = false, { passive: true });
             canvas.addEventListener('pointercancel', () => state.pointer.active = false, { passive: true });
 
-            function circleHit(ax, ay, ar, bx, by, br) {
-                const dx = ax - bx, dy = ay - by;
-                const rr = ar + br;
-                return dx * dx + dy * dy <= rr * rr;
-            }
-
             function tryDash() {
                 if (state.dash.timer > 0) return;
 
@@ -1120,6 +1227,12 @@
                 const s = currentSkin();
                 burst(p.x, p.y, Math.atan2(ay, ax) + Math.PI, 1.7, 60, 0.55, 120, 560, s.accentHue);
                 addFloatText(p.x, p.y - 22, 'DASH', s.accentHue);
+            }
+
+            function circleHit(ax, ay, ar, bx, by, br) {
+                const dx = ax - bx, dy = ay - by;
+                const rr = ar + br;
+                return dx * dx + dy * dy <= rr * rr;
             }
 
             function drawAsteroid(a) {
@@ -1210,31 +1323,6 @@
                 ctx.fill();
 
                 ctx.restore();
-            }
-
-            function drawParticles() {
-                for (const pt of state.particles) {
-                    const t = pt.ttl / pt.life;
-                    ctx.globalAlpha = clamp(t, 0, 1);
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
-                    ctx.fillStyle = `hsla(${pt.hue}, 95%, 65%, 1)`;
-                    ctx.fill();
-                }
-                ctx.globalAlpha = 1;
-            }
-
-            function drawFloatTexts() {
-                for (const ft of state.floatTexts) {
-                    const t = ft.ttl / ft.life;
-                    ctx.globalAlpha = clamp(t, 0, 1);
-                    ctx.font = '900 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = `hsla(${ft.hue}, 95%, 70%, 1)`;
-                    ctx.fillText(ft.text, ft.x, ft.y);
-                }
-                ctx.globalAlpha = 1;
             }
 
             function drawStars(dt) {
@@ -1434,10 +1522,7 @@
                     scoreEl.textContent = String(Math.floor(state.score));
 
                     for (const a of state.asteroids) {
-                        const dx = p.x - a.x;
-                        const dy = p.y - a.y;
-
-                        const hit = (dx * dx + dy * dy) <= (p.r * 0.9 + a.r * 0.82) ** 2;
+                        const hit = circleHit(p.x, p.y, p.r * 0.9, a.x, a.y, a.r * 0.82);
                         if (hit) {
                             if (state.dash.active) {
                                 const ang = Math.atan2(a.y - p.y, a.x - p.x);
@@ -1455,7 +1540,10 @@
                         }
 
                         if (!a.nearMissed) {
+                            const dx = p.x - a.x;
+                            const dy = p.y - a.y;
                             const dist = Math.hypot(dx, dy);
+
                             const dangerMargin = 22;
                             const nearRange = p.r + a.r + dangerMargin;
                             const collideRange = p.r * 0.9 + a.r * 0.82;
@@ -1492,7 +1580,7 @@
 
                 for (const pt of state.particles) {
                     const t = pt.ttl / pt.life;
-                    ctx.globalAlpha = Math.max(0, Math.min(1, t));
+                    ctx.globalAlpha = clamp(t, 0, 1);
                     ctx.beginPath();
                     ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
                     ctx.fillStyle = `hsla(${pt.hue}, 95%, 65%, 1)`;
@@ -1504,7 +1592,7 @@
 
                 for (const ft of state.floatTexts) {
                     const t = ft.ttl / ft.life;
-                    ctx.globalAlpha = Math.max(0, Math.min(1, t));
+                    ctx.globalAlpha = clamp(t, 0, 1);
                     ctx.font = '900 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
@@ -1529,9 +1617,11 @@
                 requestAnimationFrame(frame);
             }
 
-            renderCosmeticsGrid();
             setOverlay('start');
             requestAnimationFrame(frame);
+
+            /* Preload leaderboard once so it feels alive if someone opens and dies quickly */
+            fetchTop10().catch(() => { });
         })();
     </script>
 </body>
