@@ -465,6 +465,23 @@
                 <div class="cosmeticsGrid" id="cosmeticsGrid"></div>
             </div>
 
+            <div class="cosmeticsWrap hide" id="leaderWrap">
+                <div class="cosmeticsTitle">
+                    <div class="t">Global Top 10</div>
+                    <div style="font-size:12px;color:var(--muted)">Submit your run on game over</div>
+                </div>
+
+                <div class="rowInline" style="margin-bottom:10px;gap:8px;pointer-events:auto">
+                    <input id="lbName" placeholder="Name" maxlength="16"
+                        style="flex:1;min-width:160px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.20);color:var(--text);outline:none" />
+                    <button id="lbSubmit">Submit</button>
+                    <button class="secondary" id="lbRefresh">Refresh</button>
+                </div>
+
+                <div id="lbMsg" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+                <div id="lbList" style="display:grid;gap:8px"></div>
+            </div>
+
             <div class="row" style="margin-top:14px">
                 <div class="btns">
                     <button id="playBtn">Play</button>
@@ -513,6 +530,16 @@
             const cosmeticsWrap = document.getElementById('cosmeticsWrap');
             const cosmeticsGrid = document.getElementById('cosmeticsGrid');
 
+            const leaderWrap = document.getElementById('leaderWrap');
+            const lbNameEl = document.getElementById('lbName');
+            const lbSubmitBtn = document.getElementById('lbSubmit');
+            const lbRefreshBtn = document.getElementById('lbRefresh');
+            const lbMsgEl = document.getElementById('lbMsg');
+            const lbListEl = document.getElementById('lbList');
+
+            const LEADERBOARD_BASE = "https://neon-drift-leaderboard.willyboys.workers.dev";
+            const LB_NAME_KEY = "neon_drift_lb_name_v1";
+
             const DPR = () => Math.min(2, window.devicePixelRatio || 1);
 
             let W = 0, H = 0, dpr = 1;
@@ -533,22 +560,21 @@
             const rand = (a, b) => a + Math.random() * (b - a);
             const lerp = (a, b, t) => a + (b - a) * t;
 
-            const storageKeyBest = 'neon_drift_best_v5';
-            const storageKeySelected = 'neon_drift_selected_skin_v5';
+            const storageKeyBest = 'neon_drift_best_v6';
+            const storageKeySelected = 'neon_drift_selected_skin_v6';
 
             let best = Number(localStorage.getItem(storageKeyBest) || 0);
             if (!Number.isFinite(best)) best = 0;
             best = Math.max(0, Math.floor(best));
             localStorage.setItem(storageKeyBest, String(best));
 
-            // Cosmetics unlock thresholds (easier than the v4 set, first unlock at 700)
             const unlocks = [
                 { score: 0, name: 'Starter', bodyHue: 190, accentHue: 310, trail: false },
-                { score: 500, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: false },
-                { score: 1000, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
-                { score: 1500, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
-                { score: 2000, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
-                { score: 3000, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true }
+                { score: 700, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: false },
+                { score: 1600, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
+                { score: 3000, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
+                { score: 4600, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
+                { score: 6500, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true }
             ];
 
             function unlockedMaxIndexFromBest(b) {
@@ -651,6 +677,104 @@
                 }
             }
 
+            function sanitizeNameClient(input) {
+                let cleaned = String(input || "").trim().replace(/[^a-zA-Z0-9 _]/g, "");
+                cleaned = cleaned.replace(/\s+/g, " ").trim();
+                if (cleaned.length > 16) cleaned = cleaned.slice(0, 16);
+                return cleaned;
+            }
+
+            function containsBannedClient(name) {
+                const n = name.toLowerCase();
+                const banned = [
+                    "fuck", "shit", "bitch", "cunt", "asshole",
+                    "nigger", "fag",
+                    "hitler", "nazi",
+                    "rape", "porn"
+                ];
+                return banned.some(w => n.includes(w));
+            }
+
+            function renderLeaderboard(items) {
+                lbListEl.innerHTML = "";
+                const safe = Array.isArray(items) ? items : [];
+
+                for (let i = 0; i < safe.length; i++) {
+                    const row = document.createElement("div");
+                    row.style.display = "flex";
+                    row.style.justifyContent = "space-between";
+                    row.style.alignItems = "center";
+                    row.style.padding = "10px 12px";
+                    row.style.borderRadius = "12px";
+                    row.style.border = "1px solid rgba(255,255,255,.10)";
+                    row.style.background = "rgba(255,255,255,.05)";
+
+                    const left = document.createElement("div");
+                    left.style.display = "flex";
+                    left.style.gap = "10px";
+                    left.style.alignItems = "center";
+
+                    const rank = document.createElement("div");
+                    rank.textContent = "#" + (i + 1);
+                    rank.style.color = "var(--muted)";
+                    rank.style.fontWeight = "900";
+
+                    const name = document.createElement("div");
+                    name.textContent = safe[i]?.name ?? "Unknown";
+                    name.style.fontWeight = "900";
+
+                    left.appendChild(rank);
+                    left.appendChild(name);
+
+                    const score = document.createElement("div");
+                    score.textContent = String(safe[i]?.score ?? 0);
+                    score.style.fontWeight = "900";
+
+                    row.appendChild(left);
+                    row.appendChild(score);
+                    lbListEl.appendChild(row);
+                }
+
+                if (safe.length === 0) {
+                    lbListEl.innerHTML = '<div style="color:var(--muted);font-size:12px">No scores yet</div>';
+                }
+            }
+
+            async function fetchTop10() {
+                lbMsgEl.textContent = "Loading leaderboard...";
+                try {
+                    const res = await fetch(LEADERBOARD_BASE + "/top", { method: "GET" });
+                    const data = await res.json();
+                    renderLeaderboard(data);
+                    lbMsgEl.textContent = "";
+                } catch {
+                    lbMsgEl.textContent = "Could not load leaderboard";
+                    renderLeaderboard([]);
+                }
+            }
+
+            async function submitScore(name, score) {
+                lbMsgEl.textContent = "Submitting...";
+                try {
+                    const res = await fetch(LEADERBOARD_BASE + "/submit", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name, score })
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        lbMsgEl.textContent = data?.error ? String(data.error) : "Submit failed";
+                        return;
+                    }
+
+                    lbMsgEl.textContent = "Submitted";
+                    renderLeaderboard(data.top);
+                } catch {
+                    lbMsgEl.textContent = "Submit failed";
+                }
+            }
+
             bestEl.textContent = String(best);
             setSkinPillVisuals();
 
@@ -677,7 +801,6 @@
 
                 dash: { cd: 8, timer: 0, active: false, activeTimer: 0, activeDur: 0.24 },
 
-                // Leveling per run
                 level: { lvl: 1, xp: 0, next: 30, cap: 20 },
 
                 player: { x: 0, y: 0, vx: 0, vy: 0, r: 14 }
@@ -791,6 +914,7 @@
                 if (mode === 'start') {
                     ovStats.classList.add('hide');
                     cosmeticsWrap.classList.add('hide');
+                    leaderWrap.classList.add('hide');
                     ovTitle.textContent = 'Neon Drift';
                     ovDesc.innerHTML =
                         'Dodge the incoming asteroids. Survive as long as you can.' +
@@ -806,6 +930,7 @@
                 if (mode === 'over') {
                     ovStats.classList.remove('hide');
                     cosmeticsWrap.classList.remove('hide');
+                    leaderWrap.classList.remove('hide');
 
                     const s = Math.floor(state.score);
                     stSurvive.textContent = Math.floor(state.t) + 's';
@@ -817,10 +942,16 @@
                     ovDesc.innerHTML =
                         'Score: <b>' + s + '</b>' +
                         '<br>Best: <b>' + best + '</b>' +
-                        '<br><br>Select a cosmetic below. Locked skins show their unlock score.';
+                        '<br><br>Select a cosmetic below. Submit your run to the global leaderboard.';
                     playBtn.textContent = 'Play Again';
 
                     renderCosmeticsGrid();
+
+                    const savedName = localStorage.getItem(LB_NAME_KEY) || "";
+                    if (savedName && !lbNameEl.value) lbNameEl.value = savedName;
+
+                    fetchTop10();
+
                     overlay.classList.remove('hide');
                     return;
                 }
@@ -852,7 +983,6 @@
                         const newSkin = unlocks[unlockedMax];
                         addFloatText(W * 0.5, H * 0.22, 'UNLOCKED ' + newSkin.name, newSkin.bodyHue);
 
-                        // auto-select the newest unlocked skin (nice feel), but keep if player already chose something newer
                         if (selectedSkinIndex <= prevUnlocked) {
                             selectedSkinIndex = unlockedMax;
                             localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
@@ -876,6 +1006,31 @@
                 } catch {
                     prompt('Copy this text:', txt);
                 }
+            });
+
+            lbSubmitBtn.addEventListener("click", async () => {
+                const name = sanitizeNameClient(lbNameEl.value);
+                lbNameEl.value = name;
+
+                if (name.length < 2) {
+                    lbMsgEl.textContent = "Name must be at least 2 characters";
+                    return;
+                }
+                if (containsBannedClient(name)) {
+                    lbMsgEl.textContent = "Name contains banned words";
+                    return;
+                }
+
+                localStorage.setItem(LB_NAME_KEY, name);
+
+                const score = Math.floor(state.score);
+                await submitScore(name, score);
+            });
+
+            lbRefreshBtn.addEventListener("click", () => fetchTop10());
+
+            lbNameEl.addEventListener("input", () => {
+                lbNameEl.value = sanitizeNameClient(lbNameEl.value);
             });
 
             const keys = new Set();
@@ -1120,9 +1275,7 @@
                 if (running) {
                     state.t += dt;
 
-                    // Leveling: gain XP over time + from near misses
                     state.level.xp += dt * 6;
-
                     while (state.level.xp >= state.level.next && state.level.lvl < state.level.cap) {
                         state.level.xp -= state.level.next;
                         state.level.lvl += 1;
@@ -1181,10 +1334,8 @@
 
                     const p = state.player;
 
-                    // Speed scales with level
                     const lvl = Math.min(state.level.cap, state.level.lvl);
                     const speedScale = 1 + (lvl - 1) * 0.02;
-
                     const accel = 980 * speedScale;
 
                     let ax = 0, ay = 0;
@@ -1216,7 +1367,6 @@
                     p.vx *= Math.pow(damp, dt * 60);
                     p.vy *= Math.pow(damp, dt * 60);
 
-                    // Optional velocity cap that also scales with level
                     const maxSpd = 620 * speedScale;
                     const spdNow = Math.hypot(p.vx, p.vy);
                     if (spdNow > maxSpd) {
@@ -1272,7 +1422,6 @@
                         if (state.floatTexts[i].ttl <= 0) state.floatTexts.splice(i, 1);
                     }
 
-                    // Score tuning (kept as requested)
                     let scoreRate = 4.0;
                     const multBoost = 1 + (state.combo.mult - 1) * 0.08;
                     scoreRate *= multBoost;
@@ -1317,7 +1466,6 @@
                                 state.combo.max = Math.max(state.combo.max, state.combo.mult);
                                 state.combo.nearCount += 1;
 
-                                // XP burst for near miss
                                 state.level.xp += 10;
 
                                 const bonus = 20 + (state.combo.mult * 15);
