@@ -69,30 +69,30 @@
             font-size: 12px;
             color: var(--muted);
             letter-spacing: .08em;
-            text-transform: uppercase;
+            text-transform: uppercase
         }
 
         .pill .value {
             font-size: 22px;
             font-weight: 800;
-            margin-top: 2px;
+            margin-top: 2px
         }
 
         .pill.small {
-            min-width: 190px;
+            min-width: 190px
         }
 
         .rowInline {
             display: flex;
             gap: 10px;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: wrap
         }
 
         .barWrap {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 10px
         }
 
         .bar {
@@ -179,7 +179,7 @@
         .desc {
             margin: 10px 0 12px 0;
             color: var(--muted);
-            line-height: 1.35;
+            line-height: 1.35
         }
 
         .row {
@@ -187,13 +187,13 @@
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
-            justify-content: space-between;
+            justify-content: space-between
         }
 
         .btns {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
+            flex-wrap: wrap
         }
 
         button {
@@ -213,11 +213,11 @@
 
         button:hover {
             filter: brightness(1.06);
-            border-color: rgba(86, 242, 255, .35);
+            border-color: rgba(86, 242, 255, .35)
         }
 
         button:active {
-            transform: translateY(1px) scale(.99);
+            transform: translateY(1px) scale(.99)
         }
 
         button:disabled {
@@ -275,13 +275,13 @@
             font-size: 12px;
             color: var(--muted);
             letter-spacing: .08em;
-            text-transform: uppercase;
+            text-transform: uppercase
         }
 
         .stat .v {
             font-size: 18px;
             font-weight: 800;
-            margin-top: 2px;
+            margin-top: 2px
         }
 
         .cosmeticsWrap {
@@ -333,11 +333,11 @@
         }
 
         .cosmeticItem:hover {
-            filter: brightness(1.05);
+            filter: brightness(1.05)
         }
 
         .cosmeticItem:active {
-            transform: translateY(1px) scale(.99);
+            transform: translateY(1px) scale(.99)
         }
 
         .cosmeticItem.selected {
@@ -392,7 +392,7 @@
         }
 
         .hide {
-            display: none;
+            display: none
         }
 
         .sideBoard {
@@ -657,7 +657,6 @@
             const LEADERBOARD_BASE = "https://neon-drift-leaderboard.willyboys.workers.dev";
             const LB_NAME_KEY = "neon_drift_lb_name_v3";
 
-            // One submission per run score
             const SUBMITTED_RUNS_KEY = "neon_drift_submitted_run_scores_v1";
             let submittedRunScores = [];
             try {
@@ -715,6 +714,7 @@
             let selectedSkinIndex = Number(localStorage.getItem(storageKeySelected) || 0);
             if (!Number.isFinite(selectedSkinIndex)) selectedSkinIndex = 0;
             selectedSkinIndex = clamp(Math.floor(selectedSkinIndex), 0, unlocks.length - 1);
+
             if (selectedSkinIndex > unlockedMax) selectedSkinIndex = unlockedMax;
             localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
 
@@ -859,13 +859,13 @@
                 lbMsgEl.textContent = "Loading";
                 try {
                     const res = await fetch(LEADERBOARD_BASE + "/top", { method: "GET" });
-                    const ct = (res.headers.get("content-type") || "");
-                    let data;
-                    if (ct.includes("application/json")) data = await res.json();
-                    else data = await res.text();
+
+                    const ct = res.headers.get("content-type") || "";
+                    const data = ct.includes("application/json") ? await res.json() : await res.text();
 
                     if (!res.ok) {
-                        lbMsgEl.textContent = (data && data.error) ? String(data.error) : `Could not load (${res.status})`;
+                        const msg = (data && (data.detail || data.error)) ? String(data.detail || data.error) : `Could not load (${res.status})`;
+                        lbMsgEl.textContent = msg;
                         renderLeaderboard([]);
                         return;
                     }
@@ -873,12 +873,11 @@
                     renderLeaderboard(data);
                     lbMsgEl.textContent = "";
                 } catch {
-                    lbMsgEl.textContent = "Could not load";
+                    lbMsgEl.textContent = "Could not load (network)";
                     renderLeaderboard([]);
                 }
             }
 
-            // UPDATED: robust submit that won't explode on non-JSON responses
             async function submitScore(name, score) {
                 lbMsgEl.textContent = "Submitting";
                 try {
@@ -888,18 +887,11 @@
                         body: JSON.stringify({ name, score })
                     });
 
-                    let data = null;
-                    let text = "";
                     const ct = res.headers.get("content-type") || "";
-
-                    if (ct.includes("application/json")) data = await res.json();
-                    else text = await res.text();
+                    const data = ct.includes("application/json") ? await res.json() : await res.text();
 
                     if (!res.ok) {
-                        const msg =
-                            (data && data.error) ? String(data.error) :
-                                text ? text :
-                                    `Submit failed (${res.status})`;
+                        const msg = (data && (data.detail || data.error)) ? String(data.detail || data.error) : `Submit failed (${res.status})`;
                         lbMsgEl.textContent = msg;
                         return false;
                     }
@@ -1110,7 +1102,6 @@
 
                     lbControls.style.display = "flex";
                     fetchTop10();
-
                     updateSubmitUIForRun();
 
                     overlay.classList.remove('hide');
@@ -1244,7 +1235,8 @@
                 canvas.setPointerCapture(e.pointerId);
                 state.pointer.active = true;
                 const p = pointerPos(e);
-                state.pointer.x = p.x; state.pointer.y = p.y;
+                state.pointer.x = p.x;
+                state.pointer.y = p.y;
 
                 const now = performance.now();
                 if (now - lastTapTime < 320 && running) tryDash();
@@ -1256,7 +1248,8 @@
             canvas.addEventListener('pointermove', (e) => {
                 if (!state.pointer.active) return;
                 const p = pointerPos(e);
-                state.pointer.x = p.x; state.pointer.y = p.y;
+                state.pointer.x = p.x;
+                state.pointer.y = p.y;
             }, { passive: true });
 
             canvas.addEventListener('pointerup', () => state.pointer.active = false, { passive: true });
@@ -1271,7 +1264,8 @@
 
                 const p = state.player;
 
-                let ax = 0, ay = 0;
+                let ax = 0,
+                    ay = 0;
                 const up = keys.has('ArrowUp') || keys.has('w') || keys.has('W');
                 const down = keys.has('ArrowDown') || keys.has('s') || keys.has('S');
                 const left = keys.has('ArrowLeft') || keys.has('a') || keys.has('A');
@@ -1290,7 +1284,8 @@
                 }
 
                 const mag = Math.hypot(ax, ay);
-                if (mag > 0) { ax /= mag; ay /= mag; } else { ax = 0; ay = -1; }
+                if (mag > 0) { ax /= mag; ay /= mag; }
+                else { ax = 0; ay = -1; }
 
                 const dashSpeed = 980;
                 p.vx += ax * dashSpeed;
@@ -1321,7 +1316,8 @@
                     const rr = a.r * a.jag[i];
                     const px = Math.cos(t) * rr;
                     const py = Math.sin(t) * rr;
-                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
                 }
                 ctx.closePath();
 
@@ -1537,7 +1533,8 @@
                     const spdNow = Math.hypot(p.vx, p.vy);
                     if (spdNow > maxSpd) {
                         const k = maxSpd / spdNow;
-                        p.vx *= k; p.vy *= k;
+                        p.vx *= k;
+                        p.vy *= k;
                     }
 
                     p.x += p.vx * dt;
@@ -1695,6 +1692,7 @@
             setOverlay('start');
             requestAnimationFrame(frame);
 
+            // Load leaderboard on page load
             fetchTop10().catch(() => { });
         })();
     </script>
