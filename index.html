@@ -69,30 +69,30 @@
             font-size: 12px;
             color: var(--muted);
             letter-spacing: .08em;
-            text-transform: uppercase
+            text-transform: uppercase;
         }
 
         .pill .value {
             font-size: 22px;
             font-weight: 800;
-            margin-top: 2px
+            margin-top: 2px;
         }
 
         .pill.small {
-            min-width: 190px
+            min-width: 190px;
         }
 
         .rowInline {
             display: flex;
             gap: 10px;
             align-items: center;
-            flex-wrap: wrap
+            flex-wrap: wrap;
         }
 
         .barWrap {
             display: flex;
             align-items: center;
-            gap: 10px
+            gap: 10px;
         }
 
         .bar {
@@ -179,7 +179,7 @@
         .desc {
             margin: 10px 0 12px 0;
             color: var(--muted);
-            line-height: 1.35
+            line-height: 1.35;
         }
 
         .row {
@@ -187,13 +187,13 @@
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
-            justify-content: space-between
+            justify-content: space-between;
         }
 
         .btns {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap
+            flex-wrap: wrap;
         }
 
         button {
@@ -213,11 +213,11 @@
 
         button:hover {
             filter: brightness(1.06);
-            border-color: rgba(86, 242, 255, .35)
+            border-color: rgba(86, 242, 255, .35);
         }
 
         button:active {
-            transform: translateY(1px) scale(.99)
+            transform: translateY(1px) scale(.99);
         }
 
         button:disabled {
@@ -275,13 +275,13 @@
             font-size: 12px;
             color: var(--muted);
             letter-spacing: .08em;
-            text-transform: uppercase
+            text-transform: uppercase;
         }
 
         .stat .v {
             font-size: 18px;
             font-weight: 800;
-            margin-top: 2px
+            margin-top: 2px;
         }
 
         .cosmeticsWrap {
@@ -333,11 +333,11 @@
         }
 
         .cosmeticItem:hover {
-            filter: brightness(1.05)
+            filter: brightness(1.05);
         }
 
         .cosmeticItem:active {
-            transform: translateY(1px) scale(.99)
+            transform: translateY(1px) scale(.99);
         }
 
         .cosmeticItem.selected {
@@ -392,7 +392,7 @@
         }
 
         .hide {
-            display: none
+            display: none;
         }
 
         .sideBoard {
@@ -715,7 +715,6 @@
             let selectedSkinIndex = Number(localStorage.getItem(storageKeySelected) || 0);
             if (!Number.isFinite(selectedSkinIndex)) selectedSkinIndex = 0;
             selectedSkinIndex = clamp(Math.floor(selectedSkinIndex), 0, unlocks.length - 1);
-
             if (selectedSkinIndex > unlockedMax) selectedSkinIndex = unlockedMax;
             localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
 
@@ -860,7 +859,17 @@
                 lbMsgEl.textContent = "Loading";
                 try {
                     const res = await fetch(LEADERBOARD_BASE + "/top", { method: "GET" });
-                    const data = await res.json();
+                    const ct = (res.headers.get("content-type") || "");
+                    let data;
+                    if (ct.includes("application/json")) data = await res.json();
+                    else data = await res.text();
+
+                    if (!res.ok) {
+                        lbMsgEl.textContent = (data && data.error) ? String(data.error) : `Could not load (${res.status})`;
+                        renderLeaderboard([]);
+                        return;
+                    }
+
                     renderLeaderboard(data);
                     lbMsgEl.textContent = "";
                 } catch {
@@ -869,6 +878,7 @@
                 }
             }
 
+            // UPDATED: robust submit that won't explode on non-JSON responses
             async function submitScore(name, score) {
                 lbMsgEl.textContent = "Submitting";
                 try {
@@ -877,10 +887,20 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ name, score })
                     });
-                    const data = await res.json();
+
+                    let data = null;
+                    let text = "";
+                    const ct = res.headers.get("content-type") || "";
+
+                    if (ct.includes("application/json")) data = await res.json();
+                    else text = await res.text();
 
                     if (!res.ok) {
-                        lbMsgEl.textContent = data?.error ? String(data.error) : "Submit failed";
+                        const msg =
+                            (data && data.error) ? String(data.error) :
+                                text ? text :
+                                    `Submit failed (${res.status})`;
+                        lbMsgEl.textContent = msg;
                         return false;
                     }
 
@@ -888,8 +908,30 @@
                     renderLeaderboard(data.top);
                     return true;
                 } catch {
-                    lbMsgEl.textContent = "Submit failed";
+                    lbMsgEl.textContent = "Submit failed (network)";
                     return false;
+                }
+            }
+
+            function isRunScoreAlreadySubmitted(score) {
+                return submittedRunScores.includes(score);
+            }
+
+            function markRunScoreSubmitted(score) {
+                if (!submittedRunScores.includes(score)) {
+                    submittedRunScores.push(score);
+                    if (submittedRunScores.length > 50) submittedRunScores = submittedRunScores.slice(-50);
+                    localStorage.setItem(SUBMITTED_RUNS_KEY, JSON.stringify(submittedRunScores));
+                }
+            }
+
+            function updateSubmitUIForRun() {
+                if (isRunScoreAlreadySubmitted(currentRunScore)) {
+                    lbSubmitBtn.disabled = true;
+                    lbMsgEl.textContent = "This run score was already submitted";
+                } else {
+                    lbSubmitBtn.disabled = false;
+                    lbMsgEl.textContent = "";
                 }
             }
 
@@ -898,7 +940,6 @@
 
             let running = false;
             let gameOver = false;
-
             let currentRunScore = 0;
 
             const state = {
@@ -978,8 +1019,6 @@
                 initStars();
             }
 
-            // Balance tweaks
-            // Asteroid baseline slightly softer, ramp slightly softer
             function spawnAsteroid(extraSpeedMul = 1) {
                 const edge = Math.floor(Math.random() * 4);
                 let x, y, vx, vy;
@@ -1022,28 +1061,6 @@
                         ttl: life,
                         hue: hueOverride !== null ? hueOverride : (Math.random() < 0.5 ? 185 : 310)
                     });
-                }
-            }
-
-            function isRunScoreAlreadySubmitted(score) {
-                return submittedRunScores.includes(score);
-            }
-
-            function markRunScoreSubmitted(score) {
-                if (!submittedRunScores.includes(score)) {
-                    submittedRunScores.push(score);
-                    if (submittedRunScores.length > 50) submittedRunScores = submittedRunScores.slice(-50);
-                    localStorage.setItem(SUBMITTED_RUNS_KEY, JSON.stringify(submittedRunScores));
-                }
-            }
-
-            function updateSubmitUIForRun() {
-                if (isRunScoreAlreadySubmitted(currentRunScore)) {
-                    lbSubmitBtn.disabled = true;
-                    lbMsgEl.textContent = "This run score was already submitted";
-                } else {
-                    lbSubmitBtn.disabled = false;
-                    lbMsgEl.textContent = "";
                 }
             }
 
@@ -1100,7 +1117,6 @@
                     return;
                 }
 
-                // Hide everything for gameplay
                 overlay.classList.add('hide');
                 leaderSide.classList.add('hide');
             }
@@ -1424,7 +1440,6 @@
                 if (running) {
                     state.t += dt;
 
-                    // Leveling
                     state.level.xp += dt * 6;
 
                     while (state.level.xp >= state.level.next && state.level.lvl < state.level.cap) {
@@ -1485,11 +1500,10 @@
 
                     const p = state.player;
 
-                    // Balance tweaks: ship starts faster and scales slightly more per level
                     const lvl = Math.min(state.level.cap, state.level.lvl);
-                    const speedScale = 1 + (lvl - 1) * 0.025;  // was 0.02
-                    const accel = 1080 * speedScale;           // was 980
-                    const maxSpd = 700 * speedScale;           // was 620
+                    const speedScale = 1 + (lvl - 1) * 0.025;
+                    const accel = 1080 * speedScale;
+                    const maxSpd = 700 * speedScale;
 
                     let ax = 0, ay = 0;
 
