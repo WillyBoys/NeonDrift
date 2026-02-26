@@ -220,6 +220,13 @@
             transform: translateY(1px) scale(.99)
         }
 
+        button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            filter: saturate(.6);
+            transform: none;
+        }
+
         .secondary {
             background: linear-gradient(180deg, rgba(255, 79, 216, .16), rgba(255, 79, 216, .05));
             border-color: rgba(255, 79, 216, .22);
@@ -388,7 +395,6 @@
             display: none
         }
 
-        /* Small leaderboard panel on the left */
         .sideBoard {
             position: fixed;
             left: 16px;
@@ -542,7 +548,6 @@
         </div>
     </div>
 
-    <!-- Left side leaderboard panel -->
     <div class="sideBoard hide" id="leaderSide">
         <div class="sideHeader">
             <div class="t">Global Top 10</div>
@@ -650,7 +655,15 @@
             const lbListEl = document.getElementById('lbList');
 
             const LEADERBOARD_BASE = "https://neon-drift-leaderboard.willyboys.workers.dev";
-            const LB_NAME_KEY = "neon_drift_lb_name_v2";
+            const LB_NAME_KEY = "neon_drift_lb_name_v3";
+
+            // One submission per run score
+            const SUBMITTED_RUNS_KEY = "neon_drift_submitted_run_scores_v1";
+            let submittedRunScores = [];
+            try {
+                submittedRunScores = JSON.parse(localStorage.getItem(SUBMITTED_RUNS_KEY) || "[]");
+                if (!Array.isArray(submittedRunScores)) submittedRunScores = [];
+            } catch { submittedRunScores = []; }
 
             const DPR = () => Math.min(2, window.devicePixelRatio || 1);
 
@@ -672,8 +685,8 @@
             const rand = (a, b) => a + Math.random() * (b - a);
             const lerp = (a, b, t) => a + (b - a) * t;
 
-            const storageKeyBest = 'neon_drift_best_v8';
-            const storageKeySelected = 'neon_drift_selected_skin_v8';
+            const storageKeyBest = 'neon_drift_best_v9';
+            const storageKeySelected = 'neon_drift_selected_skin_v9';
 
             let best = Number(localStorage.getItem(storageKeyBest) || 0);
             if (!Number.isFinite(best)) best = 0;
@@ -868,13 +881,15 @@
 
                     if (!res.ok) {
                         lbMsgEl.textContent = data?.error ? String(data.error) : "Submit failed";
-                        return;
+                        return false;
                     }
 
                     lbMsgEl.textContent = "Submitted";
                     renderLeaderboard(data.top);
+                    return true;
                 } catch {
                     lbMsgEl.textContent = "Submit failed";
+                    return false;
                 }
             }
 
@@ -883,6 +898,8 @@
 
             let running = false;
             let gameOver = false;
+
+            let currentRunScore = 0;
 
             const state = {
                 t: 0,
@@ -955,16 +972,21 @@
                 stormDotEl.classList.remove('dangerDot');
                 stormPillEl.style.borderColor = 'rgba(86,242,255,.20)';
 
+                lbMsgEl.textContent = "";
+                lbSubmitBtn.disabled = false;
+
                 initStars();
             }
 
+            // Balance tweaks
+            // Asteroid baseline slightly softer, ramp slightly softer
             function spawnAsteroid(extraSpeedMul = 1) {
                 const edge = Math.floor(Math.random() * 4);
                 let x, y, vx, vy;
 
-                const baseSpeed = rand(140, 260);
+                const baseSpeed = rand(130, 240);
                 const diff = Math.min(4, state.t / 22);
-                const speed = (baseSpeed + diff * 70) * extraSpeedMul;
+                const speed = (baseSpeed + diff * 60) * extraSpeedMul;
 
                 const angleToCenter = (x0, y0) => Math.atan2(H * 0.5 - y0, W * 0.5 - x0);
 
@@ -1003,6 +1025,28 @@
                 }
             }
 
+            function isRunScoreAlreadySubmitted(score) {
+                return submittedRunScores.includes(score);
+            }
+
+            function markRunScoreSubmitted(score) {
+                if (!submittedRunScores.includes(score)) {
+                    submittedRunScores.push(score);
+                    if (submittedRunScores.length > 50) submittedRunScores = submittedRunScores.slice(-50);
+                    localStorage.setItem(SUBMITTED_RUNS_KEY, JSON.stringify(submittedRunScores));
+                }
+            }
+
+            function updateSubmitUIForRun() {
+                if (isRunScoreAlreadySubmitted(currentRunScore)) {
+                    lbSubmitBtn.disabled = true;
+                    lbMsgEl.textContent = "This run score was already submitted";
+                } else {
+                    lbSubmitBtn.disabled = false;
+                    lbMsgEl.textContent = "";
+                }
+            }
+
             function setOverlay(mode) {
                 if (mode === 'start') {
                     ovStats.classList.add('hide');
@@ -1027,6 +1071,8 @@
                     leaderSide.classList.remove('hide');
 
                     const s = Math.floor(state.score);
+                    currentRunScore = s;
+
                     stSurvive.textContent = Math.floor(state.t) + 's';
                     stNear.textContent = String(state.combo.nearCount);
                     stCombo.textContent = 'x' + String(state.combo.max);
@@ -1036,7 +1082,7 @@
                     ovDesc.innerHTML =
                         'Score: <b>' + s + '</b>' +
                         '<br>Best: <b>' + best + '</b>' +
-                        '<br><br>Select a cosmetic below. The leaderboard is on the left.';
+                        '<br><br>Select a cosmetic below.';
 
                     playBtn.textContent = 'Play Again';
 
@@ -1048,11 +1094,15 @@
                     lbControls.style.display = "flex";
                     fetchTop10();
 
+                    updateSubmitUIForRun();
+
                     overlay.classList.remove('hide');
                     return;
                 }
 
+                // Hide everything for gameplay
                 overlay.classList.add('hide');
+                leaderSide.classList.add('hide');
             }
 
             function start() {
@@ -1106,6 +1156,11 @@
             });
 
             lbSubmitBtn.addEventListener("click", async () => {
+                if (isRunScoreAlreadySubmitted(currentRunScore)) {
+                    updateSubmitUIForRun();
+                    return;
+                }
+
                 const name = sanitizeNameClient(lbNameEl.value);
                 lbNameEl.value = name;
 
@@ -1120,8 +1175,11 @@
 
                 localStorage.setItem(LB_NAME_KEY, name);
 
-                const score = Math.floor(state.score);
-                await submitScore(name, score);
+                const ok = await submitScore(name, currentRunScore);
+                if (ok) {
+                    markRunScoreSubmitted(currentRunScore);
+                    updateSubmitUIForRun();
+                }
             });
 
             lbRefreshBtn.addEventListener("click", () => fetchTop10());
@@ -1366,7 +1424,9 @@
                 if (running) {
                     state.t += dt;
 
+                    // Leveling
                     state.level.xp += dt * 6;
+
                     while (state.level.xp >= state.level.next && state.level.lvl < state.level.cap) {
                         state.level.xp -= state.level.next;
                         state.level.lvl += 1;
@@ -1416,18 +1476,20 @@
                     state.lastSpawn += dt;
                     if (state.lastSpawn >= spawnInterval) {
                         state.lastSpawn = 0;
-                        spawnAsteroid(state.storm.active ? 1.12 : 1);
+                        spawnAsteroid(state.storm.active ? 1.10 : 1);
 
                         const extraChance = (0.22 + diff * 0.06) * (state.storm.active ? 1.35 : 1);
-                        if (Math.random() < extraChance) spawnAsteroid(state.storm.active ? 1.12 : 1);
-                        if (state.storm.active && Math.random() < 0.25) spawnAsteroid(1.18);
+                        if (Math.random() < extraChance) spawnAsteroid(state.storm.active ? 1.10 : 1);
+                        if (state.storm.active && Math.random() < 0.25) spawnAsteroid(1.16);
                     }
 
                     const p = state.player;
 
+                    // Balance tweaks: ship starts faster and scales slightly more per level
                     const lvl = Math.min(state.level.cap, state.level.lvl);
-                    const speedScale = 1 + (lvl - 1) * 0.02;
-                    const accel = 980 * speedScale;
+                    const speedScale = 1 + (lvl - 1) * 0.025;  // was 0.02
+                    const accel = 1080 * speedScale;           // was 980
+                    const maxSpd = 700 * speedScale;           // was 620
 
                     let ax = 0, ay = 0;
 
@@ -1458,7 +1520,6 @@
                     p.vx *= Math.pow(damp, dt * 60);
                     p.vy *= Math.pow(damp, dt * 60);
 
-                    const maxSpd = 620 * speedScale;
                     const spdNow = Math.hypot(p.vx, p.vy);
                     if (spdNow > maxSpd) {
                         const k = maxSpd / spdNow;
@@ -1620,7 +1681,6 @@
             setOverlay('start');
             requestAnimationFrame(frame);
 
-            /* Preload leaderboard once so it feels alive if someone opens and dies quickly */
             fetchTop10().catch(() => { });
         })();
     </script>
