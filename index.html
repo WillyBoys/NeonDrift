@@ -663,7 +663,6 @@
                 </div>
                 <div class="footerTip">
                     <span id="smallTip">Press <span class="kbd">Space</span> to restart after game over.</span>
-                    <span>One file game</span>
                 </div>
             </div>
         </div>
@@ -1119,7 +1118,7 @@
 
                 const t = state.t;
 
-                const startMin = 70;
+                const startMin = 60;
                 const startMax = 140;
 
                 const rampSeconds = 70;
@@ -1506,9 +1505,20 @@
                     }
                     updateDashBar();
 
-                    const diff = Math.min(4, state.t / 22);
-                    const baseInterval = lerp(0.95, 0.42, diff / 4);
-                    const stormMul = state.storm.active ? 0.55 : 1;
+                    // Spawn rate starts slower, then ramps up over time
+                    const tSpawn = state.t;
+
+                    const startInterval = 1.15;   // bigger number = fewer asteroids early
+                    const endInterval = 0.34;     // smaller number = more asteroids late
+                    const rampSeconds = 110;       // how long the ramp takes
+
+                    const ramp01 = Math.min(1, tSpawn / rampSeconds);
+                    const ease = ramp01 * ramp01; // gentle early ramp
+
+                    let baseInterval = lerp(startInterval, endInterval, ease);
+
+                    // Storm makes spawns denser but not ridiculous
+                    const stormMul = state.storm.active ? 0.75 : 1;
                     const spawnInterval = baseInterval * stormMul;
 
                     state.lastSpawn += dt;
