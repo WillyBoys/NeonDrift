@@ -751,7 +751,7 @@
 
             const unlocks = [
                 { score: 0, name: 'Starter', bodyHue: 190, accentHue: 310, trail: false },
-                { score: 500, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: false },
+                { score: 500, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: true },
                 { score: 1000, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
                 { score: 1500, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
                 { score: 2000, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
@@ -1196,7 +1196,7 @@
                 const mag = Math.hypot(ax, ay);
                 if (mag > 0) { ax /= mag; ay /= mag; } else { ax = 0; ay = -1; }
 
-                const dashSpeed = 980;
+                const dashSpeed = 1250;
                 p.vx += ax * dashSpeed;
                 p.vy += ay * dashSpeed;
 
@@ -1205,6 +1205,31 @@
                 const s = currentSkin();
                 burst(p.x, p.y, Math.atan2(ay, ax) + Math.PI, 1.7, 60, 0.55, 120, 560, s.accentHue);
                 addFloatText(p.x, p.y - 22, 'DASH', s.accentHue);
+            }
+
+            function dashHitAsteroid(a, dx, dy) {
+                const dist = Math.hypot(dx, dy) || 1;
+
+                // Push asteroid away from the player
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                const knock = 780; // raise for stronger knockback
+                a.vx += nx * knock;
+                a.vy += ny * knock;
+
+                // Add a bit of spin for fun
+                a.spin += rand(-3.5, 3.5);
+
+                // Prevent repeated hits in the same frame cluster
+                a.x += nx * 10;
+                a.y += ny * 10;
+
+                const s = currentSkin();
+                burst(a.x, a.y, Math.atan2(ny, nx), 1.2, 24, 0.45, 80, 420, s.accentHue);
+
+                // Optional: reward
+                state.score += 6 + state.combo.mult * 2;
             }
 
             function drawAsteroid(a) {
@@ -1505,6 +1530,15 @@
                     }
                     updateDashBar();
 
+                    // Combo decay
+                    if (state.combo.timer > 0) {
+                        state.combo.timer = Math.max(0, state.combo.timer - dt);
+                        if (state.combo.timer === 0) {
+                            state.combo.mult = 1;
+                        }
+                    }
+                    comboEl.textContent = 'x' + String(state.combo.mult);
+
                     // Spawn rate starts slower, then ramps up over time
                     const tSpawn = state.t;
 
@@ -1572,8 +1606,12 @@
                     p.vy *= Math.pow(damp, dt * 60);
 
                     const spdNow = Math.hypot(p.vx, p.vy);
-                    if (spdNow > maxSpd) {
-                        const k = maxSpd / spdNow;
+
+                    // While dashing, allow a higher cap so it feels powerful
+                    const cap = state.dash.active ? (maxSpd * 2.4) : maxSpd;
+
+                    if (spdNow > cap) {
+                        const k = cap / spdNow;
                         p.vx *= k;
                         p.vy *= k;
                     }
@@ -1592,12 +1630,37 @@
                         a.y += a.vy * dt;
                         a.a += a.spin * dt;
 
-                        const dx = p.x - a.x, dy = p.y - a.y;
-                        const rr = (p.r * 0.9) + (a.r * 0.82);
-                        if ((dx * dx + dy * dy) <= rr * rr) {
+                        const dx = p.x - a.x;
+                        const dy = p.y - a.y;
+                        const d2 = dx * dx + dy * dy;
+
+                        const rColl = (p.r * 0.9) + (a.r * 0.82);
+                        const rColl2 = rColl * rColl;
+
+                        // Near miss band just outside collision
+                        const rNear = rColl + 18;
+                        const rNear2 = rNear * rNear;
+
+                        // Near miss
+                        if (!a.nearMissed && d2 <= rNear2 && d2 > rColl2) {
+                            a.nearMissed = true;
+
+                            state.combo.nearCount += 1;
+                            state.combo.mult = Math.min(8, state.combo.mult + 1);
+                            state.combo.max = Math.max(state.combo.max, state.combo.mult);
+                            state.combo.timer = 1.6;
+
+                            addFloatText(a.x, a.y - a.r - 10, 'NEAR MISS x' + state.combo.mult, currentSkin().accentHue);
+                        }
+
+                        // Collision
+                        if (d2 <= rColl2) {
                             if (!state.dash.active) {
                                 endGame();
                                 break;
+                            } else {
+                                // Dash hit handled below
+                                dashHitAsteroid(a, dx, dy);
                             }
                         }
                     }
