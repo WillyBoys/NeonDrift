@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Neon Drift</title>
 
-    <!-- Turnstile client script -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <style>
@@ -508,6 +507,58 @@
                 max-height: 44vh;
             }
         }
+
+        /* Clean game over layout and avoid overlap */
+        .hud {
+            z-index: 5;
+        }
+
+        .sideBoard {
+            z-index: 15;
+        }
+
+        .center {
+            z-index: 20;
+        }
+
+        body.mode-over .hud .topRow {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.mode-over .sideBoard {
+            left: auto;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: min(320px, calc(100vw - 32px));
+            max-height: 72vh;
+        }
+
+        body.mode-over .center {
+            width: min(640px, calc(100vw - 32px));
+        }
+
+        @media (max-width: 900px) {
+            body.mode-over .sideBoard {
+                left: auto;
+                right: 16px;
+                top: auto;
+                bottom: 16px;
+                transform: none;
+                width: calc(100vw - 32px);
+                max-height: 44vh;
+            }
+        }
+
+        body.mode-over::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 10;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -697,6 +748,7 @@
             if (!Number.isFinite(best)) best = 0;
             best = Math.max(0, Math.floor(best));
             localStorage.setItem(storageKeyBest, String(best));
+            bestEl.textContent = String(best);
 
             const unlocks = [
                 { score: 0, name: 'Starter', bodyHue: 190, accentHue: 310, trail: false },
@@ -720,7 +772,6 @@
             let selectedSkinIndex = Number(localStorage.getItem(storageKeySelected) || 0);
             if (!Number.isFinite(selectedSkinIndex)) selectedSkinIndex = 0;
             selectedSkinIndex = clamp(Math.floor(selectedSkinIndex), 0, unlocks.length - 1);
-
             if (selectedSkinIndex > unlockedMax) selectedSkinIndex = unlockedMax;
             localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
 
@@ -922,16 +973,6 @@
                 }
             }
 
-            function updateSubmitUIForRun() {
-                if (isRunScoreAlreadySubmitted(currentRunScore)) {
-                    lbSubmitBtn.disabled = true;
-                    lbMsgEl.textContent = "This run score was already submitted";
-                } else {
-                    lbSubmitBtn.disabled = false;
-                    lbMsgEl.textContent = "";
-                }
-            }
-
             let running = false;
             let gameOver = false;
             let currentRunScore = 0;
@@ -1015,6 +1056,8 @@
 
             function setOverlay(mode) {
                 if (mode === 'start') {
+                    document.body.classList.remove('mode-over');
+
                     ovStats.classList.add('hide');
                     cosmeticsWrap.classList.add('hide');
                     leaderSide.classList.add('hide');
@@ -1032,6 +1075,8 @@
                 }
 
                 if (mode === 'over') {
+                    document.body.classList.add('mode-over');
+
                     ovStats.classList.remove('hide');
                     cosmeticsWrap.classList.remove('hide');
                     leaderSide.classList.remove('hide');
@@ -1059,70 +1104,28 @@
 
                     lbControls.style.display = "flex";
                     fetchTop10();
-                    updateSubmitUIForRun();
-
                     overlay.classList.remove('hide');
                     return;
                 }
 
+                document.body.classList.remove('mode-over');
                 overlay.classList.add('hide');
                 leaderSide.classList.add('hide');
-            }
-
-            function start() {
-                reset();
-                running = true;
-                gameOver = false;
-                setOverlay('hide');
-            }
-
-            function end() {
-                running = false;
-                gameOver = true;
-
-                const finalScore = Math.floor(state.score);
-
-                if (finalScore > best) {
-                    best = finalScore;
-                    localStorage.setItem(storageKeyBest, String(best));
-                    bestEl.textContent = String(best);
-
-                    const prevUnlocked = unlockedMax;
-                    unlockedMax = unlockedMaxIndexFromBest(best);
-
-                    if (unlockedMax > prevUnlocked) {
-                        const newSkin = unlocks[unlockedMax];
-                        addFloatText(W * 0.5, H * 0.22, 'UNLOCKED ' + newSkin.name, newSkin.bodyHue);
-
-                        if (selectedSkinIndex <= prevUnlocked) {
-                            selectedSkinIndex = unlockedMax;
-                            localStorage.setItem(storageKeySelected, String(selectedSkinIndex));
-                            setSkinPillVisuals();
-                        }
-                    }
-                }
-
-                setOverlay('over');
             }
 
             function spawnAsteroid(extraSpeedMul = 1) {
                 const edge = Math.floor(Math.random() * 4);
                 let x, y, vx, vy;
 
-                // Asteroid speed starts slow, ramps up over time
                 const t = state.t;
 
-                // Start slower than before
                 const startMin = 70;
                 const startMax = 140;
 
-                // Ramp over time, capped
-                const rampSeconds = 70;          // how long it takes to reach near max difficulty
-                const maxBonus = 220;            // how much speed gets added at peak difficulty
+                const rampSeconds = 70;
+                const maxBonus = 220;
                 const ramp01 = Math.min(1, t / rampSeconds);
-
-                // Ease in so it does not spike early
-                const ease = ramp01 * ramp01;    // quadratic ease in
+                const ease = ramp01 * ramp01;
 
                 const baseSpeed = rand(startMin, startMax);
                 const speed = (baseSpeed + ease * maxBonus) * extraSpeedMul;
@@ -1205,12 +1208,6 @@
                 addFloatText(p.x, p.y - 22, 'DASH', s.accentHue);
             }
 
-            function circleHit(ax, ay, ar, bx, by, br) {
-                const dx = ax - bx, dy = ay - by;
-                const rr = ar + br;
-                return dx * dx + dy * dy <= rr * rr;
-            }
-
             function drawAsteroid(a) {
                 ctx.save();
                 ctx.translate(a.x, a.y);
@@ -1219,10 +1216,10 @@
                 ctx.beginPath();
                 const n = a.jag.length;
                 for (let i = 0; i < n; i++) {
-                    const t = (i / n) * Math.PI * 2;
+                    const tt = (i / n) * Math.PI * 2;
                     const rr = a.r * a.jag[i];
-                    const px = Math.cos(t) * rr;
-                    const py = Math.sin(t) * rr;
+                    const px = Math.cos(tt) * rr;
+                    const py = Math.sin(tt) * rr;
                     if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
                 }
                 ctx.closePath();
@@ -1355,7 +1352,6 @@
                 setOverlay('over');
             }
 
-            // Leaderboard UI events
             lbRefreshBtn.addEventListener("click", () => fetchTop10());
 
             lbNameEl.addEventListener("input", () => {
@@ -1364,7 +1360,8 @@
 
             lbSubmitBtn.addEventListener("click", async () => {
                 if (isRunScoreAlreadySubmitted(currentRunScore)) {
-                    updateSubmitUIForRun();
+                    lbSubmitBtn.disabled = true;
+                    lbMsgEl.textContent = "This run score was already submitted";
                     return;
                 }
 
@@ -1383,12 +1380,10 @@
                 const ok = await submitScore(name, currentRunScore, token);
                 if (ok) {
                     markRunScoreSubmitted(currentRunScore);
-                    updateSubmitUIForRun();
+                    lbSubmitBtn.disabled = true;
+                    lbMsgEl.textContent = "Submitted";
                 }
             });
-
-            // Minimal game loop hookup based on your existing structure
-            // This keeps your gameplay behavior the same where possible
 
             const keys = new Set();
 
@@ -1448,12 +1443,6 @@
             canvas.addEventListener('pointerup', () => state.pointer.active = false, { passive: true });
             canvas.addEventListener('pointercancel', () => state.pointer.active = false, { passive: true });
 
-            function circleHit2(ax, ay, ar, bx, by, br) {
-                const dx = ax - bx, dy = ay - by;
-                const rr = ar + br;
-                return dx * dx + dy * dy <= rr * rr;
-            }
-
             function start() {
                 reset();
                 running = true;
@@ -1480,7 +1469,7 @@
                 dashBarEl.style.width = (dashPct * 100).toFixed(1) + '%';
             }
 
-            function step(now) {
+            function step() {
                 const dt = 0.016;
 
                 const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -1530,8 +1519,6 @@
 
                     const p = state.player;
 
-                    // Level up over time and use it to scale movement speed
-                    // Tune these numbers to taste
                     const levelEverySeconds = 12;
                     const maxLevel = 20;
 
@@ -1541,12 +1528,10 @@
                         levelTextEl.textContent = 'Lvl ' + lvl;
                     }
 
-                    // Start slower, then ramp up smoothly with level
-                    // Level 1 feels noticeably slower than before
-                    const speedMul = 0.70 + (lvl - 1) * 0.06;   // about 0.70 up to about 1.84 at lvl 20
+                    const speedMul = 0.70 + (lvl - 1) * 0.06;
 
-                    const accel = 680 * speedMul;              // was 1080
-                    const maxSpd = 420 * speedMul;             // was 700
+                    const accel = 680 * speedMul;
+                    const maxSpd = 420 * speedMul;
 
                     let ax = 0, ay = 0;
                     const up = keys.has('ArrowUp') || keys.has('w') || keys.has('W');
@@ -1597,7 +1582,9 @@
                         a.y += a.vy * dt;
                         a.a += a.spin * dt;
 
-                        if (circleHit2(p.x, p.y, p.r * 0.9, a.x, a.y, a.r * 0.82)) {
+                        const dx = p.x - a.x, dy = p.y - a.y;
+                        const rr = (p.r * 0.9) + (a.r * 0.82);
+                        if ((dx * dx + dy * dy) <= rr * rr) {
                             if (!state.dash.active) {
                                 endGame();
                                 break;
