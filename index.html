@@ -1549,7 +1549,7 @@
                 ctx.fillStyle = bg;
                 ctx.fillRect(0, 0, W, H);
 
-                drawStars(dt);
+                //drawStars(dt);
 
                 if (running) {
                     state.t += dt;
@@ -1697,7 +1697,10 @@
                             state.combo.max = Math.max(state.combo.max, state.combo.mult);
                             state.combo.timer = 1.6;
 
-                            addFloatText(a.x, a.y - a.r - 10, 'NEAR MISS x' + state.combo.mult, currentSkin().accentHue);
+                            // points
+                            state.score += 50;
+
+                            addFloatText(a.x, a.y - a.r - 10, '+50 NEAR MISS x' + state.combo.mult, currentSkin().accentHue);
                         }
 
                         // Collision
@@ -1722,9 +1725,10 @@
                 for (const a of state.asteroids) drawAsteroid(a);
                 drawPlayer(state.player);
 
-                requestAnimationFrame(step);
-
+                // draw popups last, on top
                 drawFloatTexts(dt);
+
+                requestAnimationFrame(step);
             }
 
             setSkinPillVisuals();
