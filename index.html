@@ -1109,9 +1109,23 @@
                 const edge = Math.floor(Math.random() * 4);
                 let x, y, vx, vy;
 
-                const baseSpeed = rand(130, 240);
-                const diff = Math.min(4, state.t / 22);
-                const speed = (baseSpeed + diff * 60) * extraSpeedMul;
+                // Asteroid speed starts slow, ramps up over time
+                const t = state.t;
+
+                // Start slower than before
+                const startMin = 70;
+                const startMax = 140;
+
+                // Ramp over time, capped
+                const rampSeconds = 70;          // how long it takes to reach near max difficulty
+                const maxBonus = 220;            // how much speed gets added at peak difficulty
+                const ramp01 = Math.min(1, t / rampSeconds);
+
+                // Ease in so it does not spike early
+                const ease = ramp01 * ramp01;    // quadratic ease in
+
+                const baseSpeed = rand(startMin, startMax);
+                const speed = (baseSpeed + ease * maxBonus) * extraSpeedMul;
 
                 const angleToCenter = (x0, y0) => Math.atan2(H * 0.5 - y0, W * 0.5 - x0);
 
