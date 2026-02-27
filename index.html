@@ -1516,8 +1516,23 @@
 
                     const p = state.player;
 
-                    const accel = 1080;
-                    const maxSpd = 700;
+                    // Level up over time and use it to scale movement speed
+                    // Tune these numbers to taste
+                    const levelEverySeconds = 12;
+                    const maxLevel = 20;
+
+                    const lvl = Math.min(maxLevel, 1 + Math.floor(state.t / levelEverySeconds));
+                    if (lvl !== state.level.lvl) {
+                        state.level.lvl = lvl;
+                        levelTextEl.textContent = 'Lvl ' + lvl;
+                    }
+
+                    // Start slower, then ramp up smoothly with level
+                    // Level 1 feels noticeably slower than before
+                    const speedMul = 0.70 + (lvl - 1) * 0.06;   // about 0.70 up to about 1.84 at lvl 20
+
+                    const accel = 680 * speedMul;              // was 1080
+                    const maxSpd = 420 * speedMul;             // was 700
 
                     let ax = 0, ay = 0;
                     const up = keys.has('ArrowUp') || keys.has('w') || keys.has('W');
