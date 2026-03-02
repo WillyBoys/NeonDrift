@@ -751,11 +751,18 @@
 
             const unlocks = [
                 { score: 0, name: 'Starter', bodyHue: 190, accentHue: 310, trail: false },
-                { score: 500, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: true },
-                { score: 1000, name: 'Neon Trail', bodyHue: 185, accentHue: 310, trail: true },
-                { score: 1500, name: 'Magenta Core', bodyHue: 310, accentHue: 185, trail: true },
-                { score: 2000, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
-                { score: 3000, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true }
+
+                { score: 400, name: 'Cyan Pulse', bodyHue: 185, accentHue: 200, trail: true },
+                { score: 800, name: 'Violet Spark', bodyHue: 275, accentHue: 315, trail: true },
+                { score: 1200, name: 'Solar Lime', bodyHue: 95, accentHue: 185, trail: true },
+                { score: 1700, name: 'Crimson Nova', bodyHue: 350, accentHue: 30, trail: true },
+
+                { score: 2300, name: 'Gold Mythic', bodyHue: 45, accentHue: 185, trail: true },
+                { score: 3000, name: 'Arctic Halo', bodyHue: 205, accentHue: 160, trail: true },
+                { score: 3800, name: 'Ember Orbit', bodyHue: 18, accentHue: 55, trail: true },
+
+                { score: 4700, name: 'Void Prism', bodyHue: 260, accentHue: 320, trail: true },
+                { score: 6000, name: 'Aurora Rift', bodyHue: 145, accentHue: 285, trail: true }
             ];
 
             function unlockedMaxIndexFromBest(b) {
@@ -990,7 +997,7 @@
                 storm: { active: false, timer: 0, nextAt: 20 },
                 dash: { cd: 8, timer: 0, active: false, activeTimer: 0, activeDur: 0.24 },
                 level: { lvl: 1, xp: 0, next: 30, cap: 20 },
-                player: { x: 0, y: 0, vx: 0, vy: 0, r: 14 }
+                player: { x: 0, y: 0, vx: 0, vy: 0, r: 14, trailPts: [], trailAcc: 0 }
             };
 
             function initStars() {
@@ -1046,6 +1053,9 @@
                 state.particles.length = 0;
                 state.floatTexts.length = 0;
                 state.lastSpawn = 0;
+
+                state.player.trailPts = [];
+                state.player.trailAcc = 0;
 
                 state.combo.mult = 1;
                 state.combo.timer = 0;
@@ -1296,6 +1306,106 @@
                 ctx.stroke();
 
                 ctx.restore();
+            }
+
+            function trailTuningForSkin(s) {
+                // Higher tier skins get a longer, brighter trail
+                // You can tune these numbers freely
+                let life = 0.35;
+                let width = 10;
+                let alpha = 0.55;
+
+                // Give specific tiers extra punch
+                if (s.name === 'Gold Mythic') { life = 0.55; width = 13; alpha = 0.70; }
+                if (s.name === 'Void Prism') { life = 0.60; width = 14; alpha = 0.75; }
+                if (s.name === 'Aurora Rift') { life = 0.62; width = 15; alpha = 0.78; }
+
+                return { life, width, alpha };
+            }
+
+            function pushPlayerTrail(dt) {
+                const s = currentSkin();
+                if (!s.trail) return;
+
+                const p = state.player;
+                const speed = Math.hypot(p.vx, p.vy);
+
+                // If not moving much, do not spam trail points
+                if (speed < 35) return;
+
+                // Spacing control, smaller means denser trail
+                const spacing = 6;
+
+                p.trailAcc += speed * dt;
+                if (p.trailAcc < spacing) return;
+                p.trailAcc = 0;
+
+                p.trailPts.push({
+                    x: p.x,
+                    y: p.y,
+                    t: state.t
+                });
+
+                // Trim old points
+                const tune = trailTuningForSkin(s);
+                const cutoff = state.t - tune.life;
+                while (p.trailPts.length && p.trailPts[0].t < cutoff) p.trailPts.shift();
+
+                // Hard cap so it never grows
+                if (p.trailPts.length > 70) p.trailPts.splice(0, p.trailPts.length - 70);
+            }
+
+            function drawPlayerTrail() {
+                const s = currentSkin();
+                if (!s.trail) return;
+
+                const p = state.player;
+                const pts = p.trailPts;
+                if (pts.length < 2) return;
+
+                const tune = trailTuningForSkin(s);
+                const life = tune.life;
+                const baseW = tune.width;
+                const baseA = tune.alpha;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                for (let i = 1; i < pts.length; i++) {
+                    const a0 = pts[i - 1];
+                    const a1 = pts[i];
+
+                    const age = state.t - a1.t;
+                    const k = 1 - clamp(age / life, 0, 1); // 1 fresh, 0 old
+
+                    const w = baseW * (0.25 + 0.75 * k);
+                    const alpha = baseA * (k * k);
+
+                    // Blend between accent and body along the trail
+                    const hue = lerp(s.accentHue, s.bodyHue, i / (pts.length - 1));
+
+                    ctx.strokeStyle = `hsla(${hue}, 95%, 65%, ${alpha})`;
+                    ctx.lineWidth = w;
+
+                    ctx.beginPath();
+                    ctx.moveTo(a0.x, a0.y);
+                    ctx.lineTo(a1.x, a1.y);
+                    ctx.stroke();
+                }
+
+                // Optional: a soft glow wash to make it feel neon
+                const last = pts[pts.length - 1];
+                ctx.globalAlpha = 0.35;
+                ctx.fillStyle = `hsla(${s.accentHue}, 95%, 60%, 0.18)`;
+                ctx.beginPath();
+                ctx.arc(last.x, last.y, 22, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1;
             }
 
             function drawPlayer(p) {
@@ -1672,6 +1782,8 @@
                     if (p.y < pad) { p.y = pad; p.vy *= -0.25; }
                     if (p.y > H - pad) { p.y = H - pad; p.vy *= -0.25; }
 
+                    pushPlayerTrail(dt);
+
                     for (const a of state.asteroids) {
                         a.x += a.vx * dt;
                         a.y += a.vy * dt;
@@ -1723,6 +1835,7 @@
                 drawStormOverlay();
 
                 for (const a of state.asteroids) drawAsteroid(a);
+                drawPlayerTrail();
                 drawPlayer(state.player);
 
                 // draw popups last, on top
