@@ -692,6 +692,7 @@
             const ovDesc = document.getElementById('ovDesc');
             const playBtn = document.getElementById('playBtn');
             const shareBtn = document.getElementById('shareBtn');
+            const smallTip = document.getElementById('smallTip');
 
             const ovStats = document.getElementById('ovStats');
             const stSurvive = document.getElementById('stSurvive');
@@ -982,6 +983,7 @@
             let running = false;
             let gameOver = false;
             let currentRunScore = 0;
+            let restartCooldown = 0;
 
             const state = {
                 t: 0,
@@ -1113,6 +1115,8 @@
                         '<br><br>Level up during a run to increase ship speed.';
                     playBtn.textContent = 'Play';
                     overlay.classList.remove('hide');
+                    smallTip.innerHTML = 'Press <span class="kbd">Space</span> to start.';
+                    playBtn.disabled = false;
                     return;
                 }
 
@@ -1138,6 +1142,8 @@
                         '<br><br>Select a cosmetic below.';
 
                     playBtn.textContent = 'Play Again';
+                    playBtn.disabled = true;
+                    smallTip.innerHTML = 'Restart available in 3s';
 
                     renderCosmeticsGrid();
 
@@ -1495,6 +1501,7 @@
             function endGame() {
                 running = false;
                 gameOver = true;
+                restartCooldown = 3;
 
                 const finalScore = Math.floor(state.score);
 
@@ -1573,8 +1580,8 @@
                 }
                 keys.add(e.key);
                 if (e.key === ' ' && running) tryDash(keys);
-                if (e.key === ' ' && gameOver) start();
-                if (e.key === 'Enter' && !running) start();
+                if (e.key === ' ' && gameOver && restartCooldown <= 0) start();
+                if (e.key === 'Enter' && !running && restartCooldown <= 0) start();
             });
 
             addEventListener('keyup', (e) => {
@@ -1599,7 +1606,7 @@
                 if (now - lastTapTime < 320 && running) tryDash(keys);
                 lastTapTime = now;
 
-                if (!running) start();
+                if (!running && restartCooldown <= 0) start();
             }, { passive: true });
 
             canvas.addEventListener('pointermove', (e) => {
@@ -1613,9 +1620,11 @@
             canvas.addEventListener('pointercancel', () => state.pointer.active = false, { passive: true });
 
             function start() {
+                if (restartCooldown > 0) return;
                 reset();
                 running = true;
                 gameOver = false;
+                restartCooldown = 0;
                 setOverlay('hide');
             }
 
@@ -1658,6 +1667,21 @@
                 bg.addColorStop(1, '#050716');
                 ctx.fillStyle = bg;
                 ctx.fillRect(0, 0, W, H);
+
+                if (restartCooldown > 0) {
+                    restartCooldown = Math.max(0, restartCooldown - dt);
+                }
+
+                if (gameOver) {
+                    if (restartCooldown > 0) {
+                        const secs = Math.ceil(restartCooldown);
+                        smallTip.innerHTML = 'Restart available in ' + secs + 's';
+                        playBtn.disabled = true;
+                    } else {
+                        smallTip.innerHTML = 'Press <span class="kbd">Space</span> to play again.';
+                        playBtn.disabled = false;
+                    }
+                }
 
                 //drawStars(dt);
 
