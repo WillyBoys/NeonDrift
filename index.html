@@ -1631,7 +1631,7 @@
             playBtn.addEventListener('click', () => start());
 
             shareBtn.addEventListener('click', async () => {
-                const url = location.href;
+                const url = 'https://willyboys.itch.io/neon-drift';
                 const txt = `Play Neon Drift: ${url}`;
                 try {
                     await navigator.clipboard.writeText(txt);
